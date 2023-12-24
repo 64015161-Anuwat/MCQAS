@@ -1,15 +1,20 @@
 from math import e
 from multiprocessing import process
 import os
+import csv
 from rest_framework import status, viewsets, permissions, routers
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
+from tomlkit import key
 
 from .models import *
 from .serializers import *
 
 from django.core.files.storage import FileSystemStorage
+from django.utils.crypto import get_random_string
+
+from .utils.hash_password import *
 
 from .image_process.create_answer_sheet import *
 from .image_process.pre_process_ans import *
@@ -149,20 +154,26 @@ def overview(request):
 def userList(request):
     queryset = User.objects.all().order_by('userid')
     serializer = UserSerializer(queryset, many=True)
-    return Response(serializer.data)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 def userDetail(request, pk):
     queryset = User.objects.get(userid=pk)
     serializer = UserSerializer(queryset, many=False)
-    return Response(serializer.data)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['POST'])
 def userCreate(request):
-    serializer = UserSerializer(data=request.data)
+    data = request.data
+    salt, hashed_password = hash_password(data['password'])
+    data['password'] = hashed_password
+    data['salt'] = salt
+    serializer = UserSerializer(data=data)
     if serializer.is_valid():
         serializer.save()
-    return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    else:
+        return Response({"err" : serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])
 def userUpdate(request, pk):
@@ -170,50 +181,55 @@ def userUpdate(request, pk):
     serializer = UserSerializer(instance=user, data=request.data)
     if serializer.is_valid():
         serializer.save()
-    return Response(serializer.data)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['DELETE'])
 def userDelete(request, pk):
     user = User.objects.get(userid=pk)
     user.delete()
-    return Response({"msg" : "ลบผู้ใช้งานสำเร็จ"})
+    return Response({"msg" : "ลบผู้ใช้งานสำเร็จ"}, status=status.HTTP_200_OK)
 
 @api_view(['POST'])
 def userDuplicateEmail(request):
     email = request.data['email']
     queryset = User.objects.filter(email=email).count()
-    if queryset > 0:
-        return Response({"err" : "Email มีผู้ใช้งานแล้ว"})
-    else:
+    if queryset == 0:
         return Response(True)
+    else:
+        return Response({"err" : "Email มีผู้ใช้งานแล้ว"}, status=status.HTTP_400_BAD_REQUEST)
+        
     
 @api_view(['POST'])
 def userDuplicateGoogleid(request):
     googleid = request.data['googleid']
     queryset = User.objects.filter(googleid=googleid).count()
-    if queryset > 0:
-        return Response({"err" : "บัญชี Google มีผู้ใช้งานแล้ว"})
-    else:
+    if queryset == 0:
         return Response(True)
+    else:
+        return Response({"err" : "บัญชี Google มีผู้ใช้งานแล้ว"}, status=status.HTTP_400_BAD_REQUEST)
     
 @api_view(['POST'])
 def userLogin(request):
     email = request.data['email']
     password = request.data['password']
-    queryset = User.objects.filter(email=email, password=password)
+    queryset = User.objects.filter(email=email)
     if queryset.count() > 0:
-        return Response({
-            "userid" : queryset[0].userid,
-            "email" : queryset[0].email,
-            "fullname" : queryset[0].fullname,
-            "job" : queryset[0].job,
-            "department" : queryset[0].department,
-            "faculty" : queryset[0].faculty,
-            "workplace" : queryset[0].workplace,
-            "tel" : queryset[0].tel,
-                        })
+        salt = queryset[0].salt
+        if verify_password(password, salt, queryset[0].password) == True:
+            return Response({
+                "userid" : queryset[0].userid,
+                "email" : queryset[0].email,
+                "fullname" : queryset[0].fullname,
+                "job" : queryset[0].job,
+                "department" : queryset[0].department,
+                "faculty" : queryset[0].faculty,
+                "workplace" : queryset[0].workplace,
+                "tel" : queryset[0].tel,
+                            })
+        else:
+            return Response({"err" : "รหัสผ่านไม่ถูกต้อง"}, status=status.HTTP_401_UNAUTHORIZED)
     else:
-        return Response({"err" : "Email หรือ Password ไม่ถูกต้อง"})
+        return Response({"err" : "ไม่พบ Email นี้ในระบบ"}, status=status.HTTP_401_UNAUTHORIZED)
 
 @api_view(['POST'])
 def userLoginGoogle(request):
@@ -306,9 +322,7 @@ def examDelete(request, pk):
 @api_view(['POST'])
 def examUploadCSV(request):
     file = request.FILES['file']
-    if not file.name.endswith('.csv'):
-        return Response({"err" : "สกุลไฟล์ไม่ถูกต้อง กรุณาเลือกไฟล์ .csv"})
-    else:
+    if file.name.endswith('.csv'):
         exam = Exam.objects.get(examid=request.data['examid'])
         fs = FileSystemStorage()
         media = "/"+str(request.data['username'])+"/ans/"+str(exam.subid_exam.subid)+"/student_list/"
@@ -319,18 +333,38 @@ def examUploadCSV(request):
             if os.path.isfile(os.path.join(media_path, filename)):
                 os.remove(os.path.join(media_path, filename))
         fs.save(media_path+"student_list.csv", file)
-        val = {"std_csv_path": request.build_absolute_uri("/media"+media+file.name)}
+        # fs.save(media_path+"student_key.csv", file)
+
+        key_file = open(media_path+"student_key.csv", 'w', encoding='utf-8', newline='')
+        writer = csv.writer(key_file)
+        list_file = open(media_path+"student_list.csv", 'r', encoding='utf-8', newline='')
+        try:
+            reader = csv.reader(list_file)
+            for index_rows, rows in enumerate(reader):
+                if index_rows == 0:
+                    row = zip([rows[0]],[rows[1]],[rows[2]],[rows[3]],["key"])
+                else:
+                    key = get_random_string(length=16)
+                    row = zip([rows[0]],[rows[1]],[rows[2]],[rows[3]],[key])
+                writer.writerows(row)
+        finally:
+            key_file.close()
+            list_file.close()
+        link_csv = request.build_absolute_uri("media/"+media+"student_list.csv")
+        val = {"std_csv_path": link_csv}
         serializer = ExamSerializer(instance=exam, data=val)
         if serializer.is_valid():
             serializer.save()
-        return Response({"msg" : "อัปโหลดไฟล์รายชื่อสำเร็จ", "std_csv_path" : request.build_absolute_uri("/media"+media+file.name)})
+
+        return Response({"msg" : "อัปโหลดไฟล์รายชื่อสำเร็จ", "std_csv_path" : link_csv})
+        
+    else:
+        return Response({"err" : "สกุลไฟล์ไม่ถูกต้อง กรุณาเลือกไฟล์ .csv"})
 
 @api_view(['POST'])
 def examUploadLogo(request):
     file = request.FILES['file']
-    if not file.name.endswith('.jpg'):
-        return Response({"err" : "สกุลไฟล์ไม่ถูกต้อง กรุณาเลือกไฟล์ .jpg"})
-    else:
+    if file.name.endswith('.jpg'):
         exam = Exam.objects.get(examid=request.data['examid'])
         fs = FileSystemStorage()
         media = "/"+str(request.data['username'])+"/ans/"+str(exam.subid_exam.subid)+"/"+str(exam.examid)+"/answersheet_format/"
@@ -350,6 +384,9 @@ def examUploadLogo(request):
         if serializer.is_valid():
             serializer.save()
         return Response({"msg" : "อัปโหลดไฟล์ Logo สำเร็จ"})
+        
+    else:
+        return Response({"err" : "สกุลไฟล์ไม่ถูกต้อง กรุณาเลือกไฟล์ .jpg"})
 
 
 ##########################################################################################
@@ -433,22 +470,22 @@ def examanswersUploadPaperans(request):
                         else: not_n = False
                 if answers_ == '': return Response({"err" : "ไม่พบคำตอบข้อสอบ"})
                 if answers_[-1] == ',': answers_ = answers_[:-1]
+                val = {
+                "papeans_path": request.build_absolute_uri("/media"+media+"original/"+file.name),
+                "answers": answers_,
+                }
+                serializer = ExamanswersSerializer(instance=examanswers, data=val)
+                if serializer.is_valid():
+                    serializer.save()
+                return Response({
+                    "msg" : "อัปโหลดไฟล์สำเร็จ", 
+                    "answers" : answers_
+                                })
             else:
                 err += "ที่ไฟล์: "+file.name
                 return Response({"err" : err})
         else:
             return Response({"err" : pre})
-        val = {
-                "papeans_path": request.build_absolute_uri("/media"+media+"original/"+file.name),
-                "answers": answers_,
-                }
-        serializer = ExamanswersSerializer(instance=examanswers, data=val)
-        if serializer.is_valid():
-            serializer.save()
-        return Response({
-            "msg" : "อัปโหลดไฟล์สำเร็จ", 
-            "answers" : answers_
-                         })
 
 ##########################################################################################
 #- Examinformation

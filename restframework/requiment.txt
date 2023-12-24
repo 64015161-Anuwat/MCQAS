@@ -1,4 +1,9 @@
-Django
+django
 djangorestframework
-markdown
 django-filter
+bcrypt
+python-crfsuite
+pythainlp
+cv2
+pyzbar
+qrcode

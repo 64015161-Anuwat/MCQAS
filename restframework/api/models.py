@@ -217,7 +217,7 @@ class User(models.Model):
     userid = models.AutoField(db_column='UserID', primary_key=True)  # Field name made lowercase.
     email = models.CharField(db_column='Email', max_length=100, blank=True, null=True)  # Field name made lowercase.
     fullname = models.TextField(db_column='FullName', blank=True, null=True)  # Field name made lowercase.
-    password = models.CharField(db_column='Password', max_length=60, blank=True, null=True)  # Field name made lowercase.
+    password = models.CharField(db_column='Password', max_length=255, blank=True, null=True)  # Field name made lowercase.
     googleid = models.TextField(db_column='googleId', blank=True, null=True)  # Field name made lowercase.
     job = models.TextField(db_column='Job', blank=True, null=True)  # Field name made lowercase.
     department = models.TextField(db_column='Department', blank=True, null=True)  # Field name made lowercase.
@@ -228,6 +228,7 @@ class User(models.Model):
     imge_kyc_path = models.TextField(db_column='ImgE_KYC_path', blank=True, null=True)  # Field name made lowercase.
     e_kyc = models.CharField(db_column='E_KYC', max_length=20, blank=True, null=True)  # Field name made lowercase.
     typesid_user = models.ForeignKey(Role, models.DO_NOTHING, db_column='TypesID_User', blank=True, null=True)  # Field name made lowercase.
+    salt = models.CharField(db_column='Salt', max_length=64, blank=True, null=True)  # Field name made lowercase.
 
     class Meta:
         managed = False
