@@ -976,6 +976,31 @@ def quesheetDelete(request, pk):
         shutil.rmtree(media_path)
     return Response({"msg" : "ลบแบบสอบถามสำเร็จ"}, status=status.HTTP_200_OK)
 
+@api_view(['POST'])
+def quesheetUploadPapers(request):
+    res = []
+    file = request.FILES['file']
+    if file.name.endswith('.jpg'):
+        quesheet = Quesheet.objects.get(quesheetid=request.data['quesheetid'])
+        fs = FileSystemStorage()
+        media = "/"+str(request.data['username'])+"/qtn/"+str(request.data['quesheetid'])+"/original_sheet/"
+        media_path = fs.path('')+media
+        if not os.path.exists(media_path):
+            os.makedirs(media_path)
+        for filename in os.listdir(media_path):
+            if os.path.isfile(os.path.join(media_path, filename)):
+                os.remove(os.path.join(media_path, filename))
+        fs.save(media_path+file.name, file)
+        imgquesheet_path = request.build_absolute_uri("/media"+media+file.name)
+        val = {"imgquesheet_path": imgquesheet_path}
+        serializer = QuesheetSerializer(instance=quesheet, data=val)
+        if serializer.is_valid():
+            serializer.save()
+        return Response({"msg" : "อัปโหลดไฟล์แบบสอบถามสำเร็จ", "imgquesheet_path" : imgquesheet_path}, status=status.HTTP_201_CREATED)
+        
+    else:
+        return Response({"err" : "สกุลไฟล์ไม่ถูกต้อง กรุณาเลือกไฟล์ .jpg"}, status=status.HTTP_400_BAD_REQUEST)
+
 ##########################################################################################
 #- Queheaddetails
 @api_view(['GET'])
