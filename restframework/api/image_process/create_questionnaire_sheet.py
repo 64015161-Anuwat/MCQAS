@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
 import re
-from re import T
 from pythainlp.tokenize import sent_tokenize
 import cv2
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 import sys, os
 
-def createinfsheet(dstpath,head_1,detail1,detail2,part_1,part_2,qrcode=None,logo=None):
+def create_questionnaire_sheet(dstpath,head_1,detail1,detail2,part_1,part_2,qrcode=None,logo=None):
     try:
+        path = os.getcwd()+"/api/image_process/assets/"
+        error = ""
+
         height = 3507
         width = 2481
         margin = 50
@@ -18,22 +20,21 @@ def createinfsheet(dstpath,head_1,detail1,detail2,part_1,part_2,qrcode=None,logo
         gray = (192,192,192)
         cirtext = (70,70,70)
 
-        fonttext = ImageFont.truetype('assets/_arisa.ttf',70)
-        fonttext1 = ImageFont.truetype('assets/_arisa.ttf',35)
-        fonttext1_2 = ImageFont.truetype('assets/_arisa.ttf',32)
-        fonttext2 = ImageFont.truetype('assets/_arisa.ttf',60)
-        fonttext3 = ImageFont.truetype('assets/_arisa.ttf',45)
-        fonttext5 = ImageFont.truetype('assets/_arisa.ttf',50)
-        fonttext4 = ImageFont.truetype('assets/_arisa.ttf',65)
-        fo =  ImageFont.truetype('assets/newDB.ttf',70)
-        fo1 = ImageFont.truetype('assets/newDB.ttf',60)
+        fonttext = ImageFont.truetype(path+'_arisa.ttf',70)
+        fonttext1 = ImageFont.truetype(path+'_arisa.ttf',35)
+        fonttext1_2 = ImageFont.truetype(path+'_arisa.ttf',32)
+        fonttext2 = ImageFont.truetype(path+'_arisa.ttf',60)
+        fonttext3 = ImageFont.truetype(path+'_arisa.ttf',45)
+        fonttext5 = ImageFont.truetype(path+'_arisa.ttf',50)
+        fonttext4 = ImageFont.truetype(path+'_arisa.ttf',65)
+        fo =  ImageFont.truetype(path+'newDB.ttf',70)
+        fo1 = ImageFont.truetype(path+'newDB.ttf',60)
 
 
         img = np.zeros((height,width,3), np.uint8)
-        print(width)
         img[:,:] = bg
         cv2.rectangle(img,(margin,margin),(width-margin,height-margin),black,3)
-        logo_ = cv2.imread("assets/logo.jpg")
+        logo_ = cv2.imread(path+"logo.jpg")
         logo_ = cv2.resize(logo_,(300,135))
         x_offset=2000
         y_offset=60
@@ -47,7 +48,7 @@ def createinfsheet(dstpath,head_1,detail1,detail2,part_1,part_2,qrcode=None,logo
             img [y_offset:y_offset+logo.shape[0], x_offset:x_offset+logo.shape[1]]=logo
 
         if qrcode == None:
-            QR = cv2.imread("assets/qrcode.jpg")
+            QR = cv2.imread(path+"qrcode.jpg")
         else:
             QR = cv2.imread(qrcode)
 
@@ -63,22 +64,22 @@ def createinfsheet(dstpath,head_1,detail1,detail2,part_1,part_2,qrcode=None,logo
         ########## head
         head1 = head_1
         
-        limitleft = 150
-        limitright = 2330
+        limitleft = 500
+        limitright = 1830
         head_1 = head1
         detail1 = detail1
         detail2 = detail2
-        fonthead = ImageFont.truetype('assets/newDB.ttf',60)
+        fonthead = ImageFont.truetype(path+'newDB.ttf',60)
         if 1240-(fo.font.getsize(head_1)[0][0] /2 ) < limitleft or (1240 - (fo.font.getsize(head_1)[0][0] /2 )) + (fo.font.getsize(head_1)[0][0] ) > limitright:
-            return "Too long head name"
+            error += "Too long head name\n"
         else:
             draw.text((1240 - (fo.font.getsize(head_1)[0][0] /2 ),130),head_1,black, font=fonthead)
         if 1240-(fonttext2.font.getsize(detail1)[0][0] /2 ) < limitleft or (1240 - (fonttext2.font.getsize(detail1)[0][0] /2 )) + (fonttext2.font.getsize(detail1)[0][0] ) > limitright:
-            return "Too long detail1"
+            error += "Too long detail1\n"
         else:
             draw.text((1240 - (fonttext2.font.getsize(detail1)[0][0] /2 ),210),detail1,black, font=fonttext2)
         if 1240-(fonttext2.font.getsize(detail2)[0][0] /2 ) < limitleft or (1240 - (fonttext2.font.getsize(detail2)[0][0] /2 )) + (fonttext2.font.getsize(detail2)[0][0] ) > limitright:
-            return "Too long detail2"
+            error += "Too long detail2\n"
         else:
             draw.text((1240 - (fonttext2.font.getsize(detail2)[0][0] /2 ),310),detail2,black, font=fonttext2)
 
@@ -201,7 +202,7 @@ def createinfsheet(dstpath,head_1,detail1,detail2,part_1,part_2,qrcode=None,logo
                     if part2[c0][ch0] != "Nohead":
                         word = part2[c0][ch0]
                         word = str(word)
-                        fonth1 = ImageFont.truetype('assets/newDB.ttf',fonth1_size)
+                        fonth1 = ImageFont.truetype(path+'newDB.ttf',fonth1_size)
                         b1 = ""
                         b2 = ""
                         while int(fonth1.font.getsize(word)[0][0]) > 1550 :
@@ -230,7 +231,7 @@ def createinfsheet(dstpath,head_1,detail1,detail2,part_1,part_2,qrcode=None,logo
                                 break
                             if if45 == 0:
                                 fonth1_size -=1
-                                fonth1 = ImageFont.truetype('assets/newDB.ttf',fonth1_size)
+                                fonth1 = ImageFont.truetype(path+'newDB.ttf',fonth1_size)
 
                         if if45 > 0:
                             draw.text((175,1353+18+(98*c1)),b1,black, font=fonth1)
@@ -244,7 +245,7 @@ def createinfsheet(dstpath,head_1,detail1,detail2,part_1,part_2,qrcode=None,logo
                 else:
                     word = part2[c0][ch0]
                     word = str(word)
-                    fontsh1 = ImageFont.truetype('assets/_arisa.ttf',fontsh1_size)
+                    fontsh1 = ImageFont.truetype(path+'_arisa.ttf',fontsh1_size)
                     b1 = ""
                     b2 = ""
                     while int(fontsh1.font.getsize(word)[0][0]) > 1500 :
@@ -273,7 +274,7 @@ def createinfsheet(dstpath,head_1,detail1,detail2,part_1,part_2,qrcode=None,logo
                             break
                         if if45 == 0:
                             fontsh1_size -=1
-                            fontsh1 = ImageFont.truetype('assets/_arisa.ttf',fontsh1_size)
+                            fontsh1 = ImageFont.truetype(path+'_arisa.ttf',fontsh1_size)
 
                     if if45 > 0:
                         draw.text((170,1353+(98*c1)),str(ch0)+". "+b1,black, font=fontsh1)
@@ -300,8 +301,12 @@ def createinfsheet(dstpath,head_1,detail1,detail2,part_1,part_2,qrcode=None,logo
         for line2 in range(2):
             cv2.line(img,(parttree,3290+(100*line2)),(width-parttree,3290+(100*line2)),(0,0,0),2)
 
-        cv2.imwrite(dstpath+"infsheet.jpg",img)
-        return True
+        if(error == ""):
+            cv2.imwrite(dstpath+"questionnaire_sheet.jpg", img)
+            return True
+            
+        else:
+            return error
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         if exc_tb is not None:
@@ -309,18 +314,18 @@ def createinfsheet(dstpath,head_1,detail1,detail2,part_1,part_2,qrcode=None,logo
         else:
             return "Error: " + str(e)
 
-if __name__ == '__main__':
-    r = re.compile("ี|ิ|ึ|ื|ั|่|้|๊|๋|็|์|ํ|ฺ|ฺ|ฺ|ํ|ฺ")
-    string = "กี่จำไฟฟ้ามืดต์ฟํห๊"
-    new_s = r.sub("",string)
-    print(new_s)
-    print(len(new_s))
+# if __name__ == '__main__':
+#     r = re.compile("ี|ิ|ึ|ื|ั|่|้|๊|๋|็|์|ํ|ฺ|ฺ|ฺ|ํ|ฺ")
+#     string = "กี่จำไฟฟ้ามืดต์ฟํห๊"
+#     new_s = r.sub("",string)
+#     print(new_s)
+#     print(len(new_s))
     
-    dstpath = ""
-    head_1 = "ความรู้ความเข้าใจก่อนการฝึกอบรม"
-    detail1 = "ก่อนเข้ารับการอบรม ท่านมีความรู้ความเข้าใจก่อนการฝึกอบรม"
-    detail2 = "หลังเข้ารับการอบรม ท่านมีความรู้ความเข้าใจหลังการฝึกอบรม"
-    part_1 = [["เพศ", "ชาย", "หญิง"], ["ระดับชั้น", "ม.4", "ม.5", "ม.6", "อื่นๆ______"], ["สถานศึกษา", "โรงเรียน", "อบจ.", "อื่นๆ______"], ["สถานที่อบรม", "โรงเรียน", "อบจ.", "อื่นๆ______"], ["ประเภทการอบรม", "อบรม", "สัมมนา", "อื่นๆ______"]]
-    part_2 = [["ความรู้เกี่ยวกับหัวข้อหลังการบรรยาย","การบรรยายชัดเจนเข้าใจง่าย","วิธีถ่ายทอดเนื้อหาน่าสนใจ","เอกสาร/สื่อ ประกอบการบรรยาย","การตอบคำถามตรงประเด็น","ความเหมาะสมของวิทยากรโดยรวม"],
-              ["การรับข่าวประชาสัมพันธ์การจัดอมรม","การประสานงานการต้อนรับ","ระยะเวลาการอมรม","ความพร้อมอุปกรณ์/สื่ออิเล็กทรอนิกส์ต่างๆ","ความเหมาะสมของสถานที่"]]
-    print(createinfsheet(dstpath,head_1,detail1,detail2,part_1,part_2,logo="assets/qrcode.jpg"))
+#     dstpath = ""
+#     head_1 = "ความรู้ความเข้าใจก่อนการฝึกอบรม"
+#     detail1 = "ก่อนเข้ารับการอบรม ท่านมีความรู้ความเข้าใจก่อนการฝึกอบรม"
+#     detail2 = "หลังเข้ารับการอบรม ท่านมีความรู้ความเข้าใจหลังการฝึกอบรม"
+#     part_1 = [["เพศ", "ชาย", "หญิง"], ["ระดับชั้น", "ม.4", "ม.5", "ม.6", "อื่นๆ______"], ["สถานศึกษา", "โรงเรียน", "อบจ.", "อื่นๆ______"], ["สถานที่อบรม", "โรงเรียน", "อบจ.", "อื่นๆ______"], ["ประเภทการอบรม", "อบรม", "สัมมนา", "อื่นๆ______"]]
+#     part_2 = [["ความรู้เกี่ยวกับหัวข้อหลังการบรรยาย","การบรรยายชัดเจนเข้าใจง่าย","วิธีถ่ายทอดเนื้อหาน่าสนใจ","เอกสาร/สื่อ ประกอบการบรรยาย","การตอบคำถามตรงประเด็น","ความเหมาะสมของวิทยากรโดยรวม"],
+#               ["การรับข่าวประชาสัมพันธ์การจัดอมรม","การประสานงานการต้อนรับ","ระยะเวลาการอมรม","ความพร้อมอุปกรณ์/สื่ออิเล็กทรอนิกส์ต่างๆ","ความเหมาะสมของสถานที่"]]
+#     print(createinfsheet(dstpath,head_1,detail1,detail2,part_1,part_2,logo="assets/qrcode.jpg"))

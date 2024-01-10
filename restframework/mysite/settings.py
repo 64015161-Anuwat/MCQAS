@@ -146,3 +146,6 @@ STATICFILES_DIRS = [
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# maximum number of files that can be uploaded at once
+DATA_UPLOAD_MAX_NUMBER_FILES = None

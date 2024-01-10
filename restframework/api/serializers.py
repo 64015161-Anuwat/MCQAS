@@ -45,14 +45,14 @@ class ExaminformationSerializer(serializers.ModelSerializer):
             #          'correct', 'wrong', 'unresponsive', 'anschoicestd',
             #         'activatekey_exan', 'imgansstd_path',)
 
-class ErrorsanswersheetSerializer(serializers.ModelSerializer):
+# class ErrorsanswersheetSerializer(serializers.ModelSerializer):
     
-        class Meta:
-            model = Errorsanswersheet
-            fields = "__all__"
-            # fields = ('erroranssheetid', 'errorexamid_info', 'errorstdid', 'errorsubidstd',
-            #           'errorexamseatnumber', 'errorsetexaminfo', 'errorsection', 'errortype',
-            #           'errorimgansstd_path',)
+#         class Meta:
+#             model = Errorsanswersheet
+#             fields = "__all__"
+#             # fields = ('erroranssheetid', 'errorexamid_info', 'errorstdid', 'errorsubidstd',
+#             #           'errorexamseatnumber', 'errorsetexaminfo', 'errorsection', 'errortype',
+#             #           'errorimgansstd_path',)
 
 class LessonSerializer(serializers.ModelSerializer):
     

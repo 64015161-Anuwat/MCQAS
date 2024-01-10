@@ -18,22 +18,6 @@ class Checkscore(models.Model):
         db_table = 'CheckScore'
 
 
-class Errorsanswersheet(models.Model):
-    errorsanssheetid = models.AutoField(db_column='ErrorsAnsSheetID', primary_key=True)  # Field name made lowercase.
-    errorexamid_info = models.ForeignKey('Exam', models.DO_NOTHING, db_column='ErrorExamID_info', blank=True, null=True)  # Field name made lowercase.
-    errorstdid = models.CharField(db_column='ErrorStdID', max_length=20, blank=True, null=True)  # Field name made lowercase.
-    errorsubidstd = models.CharField(db_column='ErrorSubIDStd', max_length=20, blank=True, null=True)  # Field name made lowercase.
-    errorexamseatnumber = models.CharField(db_column='ErrorExamSeatNumber', max_length=20, blank=True, null=True)  # Field name made lowercase.
-    errorsetexaminfo = models.IntegerField(db_column='ErrorSetExamInfo', blank=True, null=True)  # Field name made lowercase.
-    errorsection = models.CharField(db_column='ErrorSection', max_length=20, blank=True, null=True)  # Field name made lowercase.
-    errorstype = models.TextField(db_column='ErrorsType', blank=True, null=True)  # Field name made lowercase.
-    errorimgansstd_path = models.TextField(db_column='ErrorImgAnsStd_path', blank=True, null=True)  # Field name made lowercase.
-
-    class Meta:
-        managed = False
-        db_table = 'ErrorsAnswerSheet'
-
-
 class Exam(models.Model):
     examid = models.AutoField(db_column='ExamID', primary_key=True)  # Field name made lowercase.
     subid_exam = models.ForeignKey('Subject', models.DO_NOTHING, db_column='SubID_exam', blank=True, null=True)  # Field name made lowercase.
@@ -43,6 +27,7 @@ class Exam(models.Model):
     setexam = models.IntegerField(db_column='SetExam', blank=True, null=True)  # Field name made lowercase.
     imganswers_format_path = models.TextField(db_column='ImgAnswerS_format_path', blank=True, null=True)  # Field name made lowercase.
     std_csv_path = models.TextField(db_column='Std_csv_path', blank=True, null=True)  # Field name made lowercase.
+    createtime_exam = models.DateTimeField(db_column='CreateTime_Exam', blank=True, null=True)  # Field name made lowercase.
 
     class Meta:
         managed = False
@@ -77,6 +62,8 @@ class Examinformation(models.Model):
     anschoicestd = models.TextField(db_column='AnsChoiceStd', blank=True, null=True)  # Field name made lowercase.
     activatekey_exan = models.CharField(db_column='ActivateKey_Exan', max_length=100, blank=True, null=True)  # Field name made lowercase.
     imgansstd_path = models.TextField(db_column='ImgAnsStd_path', blank=True, null=True)  # Field name made lowercase.
+    createtime_examinfo = models.DateTimeField(db_column='CreateTime_Examinfo', blank=True, null=True)  # Field name made lowercase.
+    errorstype = models.TextField(db_column='ErrorsType', blank=True, null=True)  # Field name made lowercase.
 
     class Meta:
         managed = False
@@ -128,12 +115,12 @@ class Quesheet(models.Model):
     detailslinetwo = models.TextField(db_column='DetailsLinetwo', blank=True, null=True)  # Field name made lowercase.
     explanation = models.TextField(db_column='Explanation', blank=True, null=True)  # Field name made lowercase.
     symbolposition = models.CharField(db_column='Symbolposition', max_length=10, blank=True, null=True)  # Field name made lowercase.
-    imglogoquesheet_path = models.TextField(db_column='ImgLogoQueSheet_path', blank=True, null=True)  # Field name made lowercase.
     imgquesheet_path = models.TextField(db_column='ImgQueSheet_path', blank=True, null=True)  # Field name made lowercase.
     activatekey_que = models.TextField(db_column='ActivateKey_Que', blank=True, null=True)  # Field name made lowercase.
     datetimestart = models.DateTimeField(db_column='DateTimeStart', blank=True, null=True)  # Field name made lowercase.
     datetimeend = models.DateTimeField(db_column='DateTimeEnd', blank=True, null=True)  # Field name made lowercase.
     statusquesheet = models.CharField(db_column='StatusQueSheet', max_length=10, blank=True, null=True)  # Field name made lowercase.
+    createtime_quesheet = models.DateTimeField(db_column='CreateTime_QueSheet', blank=True, null=True)  # Field name made lowercase.
 
     class Meta:
         managed = False
@@ -160,6 +147,7 @@ class Queinformation(models.Model):
     ansquetopic = models.TextField(db_column='AnsQueTopic', blank=True, null=True)  # Field name made lowercase.
     imgansstd_path = models.TextField(db_column='ImgAnsStd_path', blank=True, null=True)  # Field name made lowercase.
     status_queinfo = models.CharField(db_column='Status_QueInfo', max_length=10, blank=True, null=True)  # Field name made lowercase.
+    createtime_quesheetinfo = models.DateTimeField(db_column='CreateTime_QueSheetinfo', blank=True, null=True)  # Field name made lowercase.
 
     class Meta:
         managed = False
@@ -229,6 +217,7 @@ class User(models.Model):
     e_kyc = models.CharField(db_column='E_KYC', max_length=20, blank=True, null=True)  # Field name made lowercase.
     typesid_user = models.ForeignKey(Role, models.DO_NOTHING, db_column='TypesID_User', blank=True, null=True)  # Field name made lowercase.
     salt = models.CharField(db_column='Salt', max_length=64, blank=True, null=True)  # Field name made lowercase.
+    createtime_user = models.DateTimeField(db_column='CreateTime_User', blank=True, null=True)  # Field name made lowercase.
 
     class Meta:
         managed = False

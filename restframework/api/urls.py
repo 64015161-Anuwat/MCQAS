@@ -58,12 +58,6 @@ urlpatterns = [
     path('examinformation/delete/<str:pk>/', views.examinformationDelete, name='Examinformation-Delete'),
     path('examinformation/upload/paperans/', views.examinformationUploadPaperans, name='Examinformation-Upload-Paper'),
     ############################################################
-    path('errorsanswersheet/', views.errorsanswersheetList, name='Erroranswersheet-List'),
-    path('errorsanswersheet/detail/<str:pk>/', views.errorsanswersheetDetail, name='Erroranswersheet-Detail'),
-    path('errorsanswersheet/create/', views.errorsanswersheetCreate, name='Erroranswersheet-Create'),
-    path('errorsanswersheet/update/<str:pk>/', views.errorsanswersheetUpdate, name='Erroranswersheet-Update'),
-    path('errorsanswersheet/delete/<str:pk>/', views.errorsanswersheetDelete, name='Erroranswersheet-Delete'),
-    ############################################################
     path('lesson/', views.lessonList, name='Lesson-List'),
     path('lesson/detail/<str:pk>/', views.lessonDetail, name='Lesson-Detail'),
     path('lesson/create/', views.lessonCreate, name='Lesson-Create'),
