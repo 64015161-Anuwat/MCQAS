@@ -1,4 +1,4 @@
-def chk_validate_qtn(part_2, part_2_pattern):
+def chk_part_2_qtn(part_2, part_2_pattern):
     part_2 = part_2.split(',')
     part_2_pattern = part_2_pattern.split(',')
     part_2_ = []
@@ -15,5 +15,40 @@ def chk_validate_qtn(part_2, part_2_pattern):
             part_2_.append(part_2_temp)
         return part_2_
     else : 
-        return [False, "จำนวนคถามไม่ตรงกับจำนวนรูปแบบหัวข้อ"]
-    
+        return [False, "จำนวนคำถามไม่ตรงกับจำนวนรูปแบบหัวข้อ"]
+
+def chk_validate_qtn(part_1, part_2):
+    try:
+        part_1_check = None
+        part_1_ = ""
+        for c, i in enumerate(part_1):
+            if c != 0: part_1_ += ","
+            for cc, ii in enumerate(i[1:]):
+                if cc == 0: part_1_ += str(ii)
+                else: part_1_ += ":"+str(ii)
+            if i[1] != 'n':
+                if len(i) != 2:
+                    part_1_check = False
+        if part_1_check != None :
+            part_1_check = "มีคำตอบมากกว่า 1 คำตอบในบางคอลัมน์ที่หัวข้อ"
+
+        part_2_check = None
+        part_2_ = ""
+        for c, i in enumerate(part_2):
+            if c != 0: part_2_ += ","
+            for cc, ii in enumerate(i[1:]):
+                if cc == 0: part_2_ += str(ii)
+                else: part_2_ += ":"+str(ii)
+            if i[1] != 'n':
+                if len(i) != 2:
+                    part_2_check = False
+        if part_2_check != None :
+            part_2_check = "มีคำตอบมากกว่า 1 คำตอบในบางคอลัมน์ที่ตัวเลือก"
+        
+        check_qtn = True
+        if part_1_check != None or part_2_check != None:
+            check_qtn = False
+        check = [check_qtn, part_1_check, part_2_check]
+        return [check, part_1_, part_2_]
+    except:
+        return [False, None, None]

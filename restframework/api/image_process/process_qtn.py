@@ -149,28 +149,33 @@ def process_qtn(srcpath, dstpathp1, dstpathp3, file, p1, indpart1, indpart2):
         n=0
 
         for r in range(len(indpart2)):
-            for i in range(len(indpart2[r])):
-                for q in range(6):
-                    mask = np.zeros(thresh.shape[:2], np.uint8)
-                    mask[0+(row*r):row+(row*r), 0+(col*q):col+(col*q)] = 255
-                    masked_img = cv2.bitwise_and(thresh,thresh,mask = mask)
-                    hist_mask = cv2.calcHist([thresh],[0],mask,[2],[0,256])
-                    if hist_mask[0] > 40 :
-                        if n == 0 :
-                            part2.append([])
-                            part2[r].append(r+1)
-                            n+=1
-                        part2[r].append(abs(q-5))
-                        count = count +1
+            for q in range(6):
+                mask = np.zeros(thresh.shape[:2], np.uint8)
+                mask[0+(row*r):row+(row*r), 0+(col*q):col+(col*q)] = 255
+                masked_img = cv2.bitwise_and(thresh,thresh,mask = mask)
+                hist_mask = cv2.calcHist([thresh],[0],mask,[2],[0,256])
+                if hist_mask[0] > 40 :
+                    if n == 0 :
+                        part2.append([])
+                        part2[r].append(r+1)
+                        n+=1
+                    part2[r].append(abs(q-5))
+                    count = count +1
 
-                if count == 0 :
-                    part2.append([])
-                    part2[r].append(r+1)
-                    part2[r].append("n")
-                count = 0
-                n=0
-        
-        err=[err1,err2]
+            if count == 0 :
+                part2.append([])
+                part2[r].append(r+1)
+                part2[r].append("n")
+            count = 0
+            n=0
+
+        chk_err = True
+        if err1 != 0 or err2 != 0:
+            chk_err = False
+        if err1 == 0: err1 = ""
+        if err2 == 0: err2 = ""
+        err=[chk_err, err1, err2]
+
         return (err,part1,part2)
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()

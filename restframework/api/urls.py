@@ -32,6 +32,7 @@ urlpatterns = [
     ############################################################
     path('exam/', views.examList, name='Exam-List'),
     path('exam/detail/<str:pk>/', views.examDetail, name='Exam-Detail'),
+    path('exam/detail/subject/<str:subject>/', views.examDetailBySubid, name='Exam-Detail-Subject'),
     path('exam/create/', views.examCreate, name='Exam-Create'),
     path('exam/update/<str:pk>/', views.examUpdate, name='Exam-Update'),
     path('exam/delete/<str:pk>/', views.examDelete, name='Exam-Delete'),
@@ -40,6 +41,7 @@ urlpatterns = [
     ############################################################
     path('examanswers/', views.examanswersList, name='Examanswers-List'),
     path('examanswers/detail/<str:pk>/', views.examanswersDetail, name='Examanswers-Detail'),
+    path('examanswers/detail/exam/<str:pk>/', views.examanswersDetailByExamid, name='Examanswers-Detail-Exam'),
     path('examanswers/create/', views.examanswersCreate, name='Examanswers-Create'),
     path('examanswers/update/<str:pk>/', views.examanswersUpdate, name='Examanswers-Update'),
     path('examanswers/delete/<str:pk>/', views.examanswersDelete, name='Examanswers-Delete'),
@@ -47,6 +49,7 @@ urlpatterns = [
     ############################################################
     path('examinformation/', views.examinformationList, name='Examinformation-List'),
     path('examinformation/detail/<str:pk>/', views.examinformationDetail, name='Examinformation-Detail'),
+    path('examinformation/detail/exam/<str:pk>/', views.examinformationDetailByExamid, name='Examinformation-Detail-Exam'),
     path('examinformation/create/', views.examinformationCreate, name='Examinformation-Create'),
     path('examinformation/update/<str:pk>/', views.examinformationUpdate, name='Examinformation-Update'),
     path('examinformation/delete/<str:pk>/', views.examinformationDelete, name='Examinformation-Delete'),
@@ -54,12 +57,14 @@ urlpatterns = [
     ############################################################
     path('chapter/', views.chapterList, name='chapter-List'),
     path('chapter/detail/<str:pk>/', views.chapterDetail, name='chapter-Detail'),
+    path('chapter/detail/user/<str:pk>/', views.chapterDetailByUserid, name='chapter-Detail-User'),
     path('chapter/create/', views.chapterCreate, name='chapter-Create'),
     path('chapter/update/<str:pk>/', views.chapterUpdate, name='chapter-Update'),
     path('chapter/delete/<str:pk>/', views.chapterDelete, name='chapter-Delete'),
     ############################################################
     path('chapteranswer/', views.chapteranswerList, name='chapteranswer-List'),
     path('chapteranswer/detail/<str:pk>/', views.chapteranswerDetail, name='chapteranswer-Detail'),
+    path('chapteranswer/detail/chapter/<str:pk>/', views.chapteranswerDetailByChapterid, name='chapteranswer-Detail-Chapter'),
     path('chapteranswer/create/', views.chapteranswerCreate, name='chapteranswer-Create'),
     path('chapteranswer/update/<str:pk>/', views.chapteranswerUpdate, name='chapteranswer-Update'),
     path('chapteranswer/delete/<str:pk>/', views.chapteranswerDelete, name='chapteranswer-Delete'),
@@ -72,6 +77,7 @@ urlpatterns = [
     ############################################################
     path('quesheet/', views.quesheetList, name='Quesheet-List'),
     path('quesheet/detail/<str:pk>/', views.quesheetDetail, name='Quesheet-Detail'),
+    path('quesheet/detail/user/<str:pk>/', views.quesheetDetailByUserid, name='Quesheet-Detail-User'),
     path('quesheet/create/', views.quesheetCreate, name='Quesheet-Create'),
     path('quesheet/update/<str:pk>/', views.quesheetUpdate, name='Quesheet-Update'),
     path('quesheet/delete/<str:pk>/', views.quesheetDelete, name='Quesheet-Delete'),
@@ -103,12 +109,14 @@ urlpatterns = [
     ############################################################
     path('subchapter/', views.subchapterList, name='subchapter-List'),
     path('subchapter/detail/<str:pk>/', views.subchapterDetail, name='subchapter-Detail'),
+    path('subchapter/detail/chapter/<str:pk>/', views.subchapterDetailByChapterid, name='subchapter-Detail-Chapter'),
     path('subchapter/create/', views.subchapterCreate, name='subchapter-Create'),
     path('subchapter/update/<str:pk>/', views.subchapterUpdate, name='subchapter-Update'),
     path('subchapter/delete/<str:pk>/', views.subchapterDelete, name='subchapter-Delete'),
     ############################################################
     path('subject/', views.subjectList, name='Subject-List'),
     path('subject/detail/<str:pk>/', views.subjectDetail, name='Subject-Detail'),
+    path('subject/detail/user/<str:pk>/', views.subjectDetailByUserid, name='Subject-Detail-User'),
     path('subject/create/', views.subjectCreate, name='Subject-Create'),
     path('subject/update/<str:pk>/', views.subjectUpdate, name='Subject-Update'),
     path('subject/delete/<str:pk>/', views.subjectDelete, name='Subject-Delete'),

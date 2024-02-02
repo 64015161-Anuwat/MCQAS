@@ -1,8 +1,4 @@
-from calendar import c
-from itertools import count
-import re
 import sys, os
-from turtle import right
 
 def chk_ans(ans, chno, chans, measure):
     try:

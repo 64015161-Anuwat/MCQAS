@@ -1,8 +1,6 @@
 from math import e
 import os
-import sys, errno  
 import shutil
-import csv
 import json
 import datetime
 import pandas as pd
@@ -49,6 +47,7 @@ def overview(request):
             'List': '/exam/',
             'Create': '/exam/create/',
             'Detail': '/exam/detail/<str:pk>/',
+            'DetailBySubid': '/exam/detail/subject/<str:pk>/',
             'Update': '/exam/update/<str:pk>/',
             'Delete': '/exam/delete/<str:pk>/',
             'UploadCSV': '/exam/upload/csv/',
@@ -58,6 +57,7 @@ def overview(request):
             'List': '/examanswers/',
             'Create': '/examanswers/create/',
             'Detail': '/examanswers/detail/<str:pk>/',
+            'DetailByExamid': '/examanswers/detail/examid/<str:pk>/',
             'Update': '/examanswers/update/<str:pk>/',
             'Delete': '/examanswers/delete/<str:pk>/',
             'UploadPaper': '/examanswers/upload/paper/',
@@ -66,6 +66,7 @@ def overview(request):
             'List': '/examinformation/',
             'Create': '/examinformation/create/',
             'Detail': '/examinformation/detail/<str:pk>/',
+            'DetailByExamid': '/examinformation/detail/exam/<str:pk>/',
             'Update': '/examinformation/update/<str:pk>/',
             'Delete': '/examinformation/delete/<str:pk>/',
             'UploadPaper': '/examinformation/upload/paper/',
@@ -74,6 +75,7 @@ def overview(request):
             'List': '/chapter/',
             'Create': '/chapter/create/',
             'Detail': '/chapter/detail/<str:pk>/',
+            'DtailByUserid': '/chapter/detail/user/<str:pk>/',
             'Update': '/chapter/update/<str:pk>/',
             'Delete': '/chapter/delete/<str:pk>/',
         },
@@ -81,6 +83,7 @@ def overview(request):
             'List': '/chapteranswer/',
             'Create': '/chapteranswer/create/',
             'Detail': '/chapteranswer/detail/<str:pk>/',
+            'DetailByChapterid': '/chapteranswer/detail/chapter/<str:pk>/',
             'Update': '/chapteranswer/update/<str:pk>/',
             'Delete': '/chapteranswer/delete/<str:pk>/',
         },
@@ -95,6 +98,7 @@ def overview(request):
             'List': '/quesheet/',
             'Create': '/quesheet/create/',
             'Detail': '/quesheet/detail/<str:pk>/',
+            'DetailByUserid': '/quesheet/detail/user/<str:pk>/',
             'Update': '/quesheet/update/<str:pk>/',
             'Delete': '/quesheet/delete/<str:pk>/',
         },
@@ -131,6 +135,7 @@ def overview(request):
             'List': '/subchapter/',
             'Create': '/subchapter/create/',
             'Detail': '/subchapter/detail/<str:pk>/',
+            'DetailByChapterid': '/subchapter/detail/chapter/<str:pk>/',
             'Update': '/subchapter/update/<str:pk>/',
             'Delete': '/subchapter/delete/<str:pk>/',
         },
@@ -138,6 +143,7 @@ def overview(request):
             'List': '/subject/',
             'Create': '/subject/create/',
             'Detail': '/subject/detail/<str:pk>/',
+            'DetailByUserid': '/subject/detail/user/<str:pk>/',
             'Update': '/subject/update/<str:pk>/',
             'Delete': '/subject/delete/<str:pk>/',
         },
@@ -262,6 +268,12 @@ def examDetail(request, pk):
     serializer = ExamSerializer(queryset, many=False)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
+@api_view(['GET'])
+def examDetailBySubid(request, pk):
+    queryset = Exam.objects.filter(subid=pk)
+    serializer = ExamSerializer(queryset, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
 @api_view(['POST'])
 def examCreate(request):
     data = request.data
@@ -363,6 +375,12 @@ def examanswersDetail(request, pk):
     serializer = ExamanswersSerializer(queryset, many=False)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
+@api_view(['GET'])
+def examanswersDetailByExamid(request, pk):
+    queryset = Examanswers.objects.filter(examid=pk)
+    serializer = ExamanswersSerializer(queryset, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
 @api_view(['POST'])
 def examanswersCreate(request):
     data = request.data
@@ -455,6 +473,12 @@ def examinformationList(request):
 def examinformationDetail(request, pk):
     queryset = Examinformation.objects.get(examinfoid=pk)
     serializer = ExaminformationSerializer(queryset, many=False)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+def examinformationDetailByExamid(request, pk):
+    queryset = Examinformation.objects.filter(examid=pk)
+    serializer = ExaminformationSerializer(queryset, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['POST'])
@@ -650,11 +674,8 @@ def examinformationUploadPaper(request):
 
         examinfo['createtimeexaminfo'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         examinfo_serializer = ExaminformationSerializer(data=examinfo)
-
         if examinfo_serializer.is_valid():
             examinfo_serializer.save()
-        else:
-            return Response({"err" : examinfo_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         res.append(examinfo_serializer.data)
     return Response(res, status=status.HTTP_201_CREATED)
 
@@ -670,6 +691,12 @@ def chapterList(request):
 def chapterDetail(request, pk):
     queryset = Chapter.objects.get(chapterid=pk)
     serializer = ChapterSerializer(queryset, many=False)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+def chapterDetailByUserid(request, pk):
+    queryset = Chapter.objects.filter(userid=pk)
+    serializer = ChapterSerializer(queryset, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['POST'])
@@ -707,6 +734,12 @@ def chapteranswerDetail(request, pk):
     serializer = ChapteranswerSerializer(queryset, many=False)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
+@api_view(['GET'])
+def chapteranswerDetailByChapterid(request, pk):
+    queryset = Chapteranswer.objects.filter(chapterid=pk)
+    serializer = ChapteranswerSerializer(queryset, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
 @api_view(['POST'])
 def chapteranswerCreate(request):
     serializer = ChapteranswerSerializer(data=request.data)
@@ -740,6 +773,12 @@ def quesheetList(request):
 def quesheetDetail(request, pk):
     queryset = Quesheet.objects.get(quesheetid=pk)
     serializer = QuesheetSerializer(queryset, many=False)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+def quesheetDetailByUserid(request, pk):
+    queryset = Quesheet.objects.filter(userid=pk)
+    serializer = QuesheetSerializer(queryset, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['POST'])
@@ -1008,42 +1047,62 @@ def queinformationUploadPaper(request):
     part_3_path = fs.path('')+default_path+"result/part3/"
     os.makedirs(part_3_path, exist_ok=True)
     for file in request.FILES.getlist('file'):
+        queinformation_data = {
+            "quesheetid" : request.data['quesheetid'],
+            "ansquehead" : None,
+            "ansquetopic" : None,
+            "imgansstd_path" : None,
+            "status_queinfo" : "Offline",
+            "errorstype" : None
+        }
         if file.name.lower().endswith('.jpg') or file.name.lower().endswith('.jpeg'):
             fs.save(ori_path+file.name, file)
             data = read_qrcode(ori_path+file.name, request.data['src'])
-            if data != False:
-                pre = pre_process_qtn(ori_path, pre_path, file.name)
-                if pre == True:
-                    format_part_1 = []
-                    part_1 = [queheaddetails.quehead1, queheaddetails.quehead2, queheaddetails.quehead3, queheaddetails.quehead4, queheaddetails.quehead5]
-                    for index, i in enumerate(part_1):
-                        head = i.split(',')
-                        format_part_1.append([])
-                        for index_, ii in enumerate(head):
-                            format_part_1[-1].append(index_+1)
+            pre = pre_process_qtn(ori_path, pre_path, file.name)
+            if pre == True:
+                img_link = request.build_absolute_uri("/media"+default_path+"questionnaire/original/"+file.name)
+                queinformation_data['imgansstd_path'] = img_link
 
-                    format_part_2 = []
-                    part_2 = chk_validate_qtn(quetopicdetails.quetopicdetails, quetopicdetails.quetopicformat)
-                    print("part_2 :",part_2)
-                    for index, i in enumerate(part_2):
-                        if i == "nohead":
+                format_part_1 = []
+                part_1 = [queheaddetails.quehead1, queheaddetails.quehead2, queheaddetails.quehead3, queheaddetails.quehead4, queheaddetails.quehead5]
+                for index, i in enumerate(part_1):
+                    head = i.split(',')
+                    format_part_1.append([])
+                    for index_, ii in enumerate(head):
+                        format_part_1[-1].append(index_+1)
+
+                format_part_2 = []
+                part_2 = chk_part_2_qtn(quetopicdetails.quetopicdetails, quetopicdetails.quetopicformat)
+                for index, i in enumerate(part_2):
+                    if i == "nohead":
+                        format_part_2.append([])
+                    else:
+                        for iindex, ii in enumerate(i):
                             format_part_2.append([])
-                        else:
-                            for iindex, ii in enumerate(i):
-                                format_part_2.append([])
-                                    
-                    print("format_part_1 :",format_part_1)
-                    print("format_part_2 :",format_part_2)
-                    proc = process_qtn(pre_path, part_1_path, part_3_path,"pre_"+file.name, [], format_part_1, format_part_2)
-                    print("proc 1 :",proc[1])
-                    print("proc 2 :",proc[2])
-                    pass
+
+                proc = process_qtn(pre_path, part_1_path, part_3_path,"pre_"+file.name, [], format_part_1, format_part_2)
+                
+                if proc[0][0]:
+                    valid = chk_validate_qtn(proc[1], proc[2])
+                    if valid[0][0]:
+                        queinformation_data['ansquehead'] = valid[1]
+                        queinformation_data['ansquetopic'] = valid[2]
+                        if data != False:
+                            if data[0] != "CE KMITL-"+str(request.data['quesheetid']):
+                                queinformation_data['errorstype'] = "QR Code ไม่ตรงกับแบบสอบถาม"
+                    else:
+                        queinformation_data['errorstype'] = valid[0][1]+","+valid[0][2] if valid[0][2] != "" else valid[0][1]
                 else:
-                    res.append({"err" : pre})
+                    queinformation_data['errorstype'] = proc[0][1]+","+proc[0][2] if proc[0][2] != "" else proc[0][1]
             else:
-                res.append({"err" : "ไม่พบ QR Code"})
+                queinformation_data['errorstype'] = pre
         else:
-            res.append({"err" : "สกุลไฟล์ไม่ถูกต้อง กรุณาเลือกไฟล์ .jpg"})
+            queinformation_data['errorstype'] = "สกุลไฟล์ไม่ถูกต้อง กรุณาเลือกไฟล์ .jpg"
+        queinformation_data['createtimequesheetinfo'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        queinformation_serializer = QueinformationSerializer(data=queinformation_data)
+        if queinformation_serializer.is_valid():
+            queinformation_serializer.save()
+        res.append(queinformation_serializer.data)
     return Response(res, status=status.HTTP_201_CREATED)
 
 ##########################################################################################
@@ -1139,6 +1198,12 @@ def subchapterDetail(request, pk):
     serializer = SubchapterSerializer(queryset, many=False)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
+@api_view(['GET'])
+def subchapterDetailByChapterid(request, pk):
+    queryset = Subchapter.objects.filter(chapterid=pk)
+    serializer = SubchapterSerializer(queryset, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
 @api_view(['POST'])
 def subchapterCreate(request):
     serializer = SubchapterSerializer(data=request.data)
@@ -1172,6 +1237,12 @@ def subjectList(request):
 def subjectDetail(request, pk):
     queryset = Subject.objects.get(subid=pk)
     serializer = SubjectSerializer(queryset, many=False)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+def subjectDetailByUserid(request, pk):
+    queryset = Subject.objects.filter(userid=pk)
+    serializer = SubjectSerializer(queryset, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['POST'])

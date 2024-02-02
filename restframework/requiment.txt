@@ -9,3 +9,4 @@ pyzbar
 qrcode
 django-cors-headers
 imutils
+pandas
