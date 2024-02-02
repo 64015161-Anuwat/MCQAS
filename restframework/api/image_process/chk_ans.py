@@ -1,5 +1,6 @@
 from calendar import c
 from itertools import count
+import re
 import sys, os
 from turtle import right
 
@@ -30,12 +31,12 @@ def chk_ans(ans, chno, chans, measure):
                         if str(ans[i][ii]) == str(chans[i][iii]):
                             chk_correct_all += 1
                             rightperchoice += 1
-                            if ms[3] == '0': score += int(ms[1])/len(chans[i])
+                            if ms[4] == '0': score += int(ms[1])/len(chans[i])
                         else:
-                            if ms[3] == '0': score -= int(ms[2])/len(chans[i])
+                            if ms[4] == '0': score -= int(ms[2])/len(chans[i])
                             if str(ans[i][ii]) == 'n': notans += 1
                 max_score += int(ms[1])
-                if(ms[3] == '1' and chk_correct_all == len(chans[i])): score += int(ms[1])
+                if(ms[4] == '1' and chk_correct_all == len(chans[i])): score += int(ms[1])
                 else : score -= int(ms[2])
                 if len(ans[i]) == 0:
                     score -= int(ms[3])
@@ -48,16 +49,17 @@ def chk_ans(ans, chno, chans, measure):
                     analys += "0"
                 chk_correct_all = 0
         
-        error = ""
+        err = ""
 
         if countchk != chno:
-            error = "เกณฑ์คะแนนไม่เท่ากับจำนวนข้อ"
+            err = "เกณฑ์คะแนนไม่เท่ากับจำนวนข้อ"
+            return (err, None, None, None, None, None, None, None, None, None)
 
-        return (error, ans, chans, max_score, round(score), right, wrong, rightperchoice, notans, analys)
+        return (err, ans, chans, max_score, round(score), right, wrong, rightperchoice, notans, analys)
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         err = "Error Line "+str(exc_tb.tb_lineno if exc_tb else None)+" : "+str(e)
-        return (err,0,0,0,0,0,0)
+        return (err, None, None, None, None, None, None, None, None, None)
     
 # if __name__ == "__main__":
 #     ans = "A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z"

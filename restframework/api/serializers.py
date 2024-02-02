@@ -3,131 +3,106 @@ from .models import *
 
 
 class UserSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = User
         fields = "__all__"
-        # fields = ('userid', 'email', 'fullname', 'password', 
-        #           'googleid', 'job', 'department','faculty', 
-        #           'workplace', 'tel', 'usageformat','imge_kyc_path', 
-        #           'e_kyc', 'typesid_user')
+        # fields = ('userid', 'email', 'fullname', 'password',
+        #           'salt', 'googleid', 'job',
+        #           'department','faculty', 'workplace', 
+        #           'tel', 'usageformat','imge_kyc_path', 'e_kyc',
+        #           'typesid_user', 'createtime_user')
 
-class CheckscoreSerializer(serializers.ModelSerializer):
-
+class TypeSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Checkscore
+        model = Type
         fields = "__all__"
-        # fields = ('scoreid', 'userid_score', 'activatekey_score')
+        # fields = ('typesid', 'typesname', 'limitsubject', 'limitexam', 'limitque')
+
+class RequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Request
+        fields = "__all__"
+        # fields = ('requestid', 'userid', 'imgrequest_path', 'notes', 'status_request',)
+
+class SubjectSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Subject
+        fields = "__all__"
+        # fields = ('subid', 'userid', 'subjectid', 'subjectname',
+        #           'year', 'semester', 'statussubject', 'deletetime_subject',
+        #           'createtime_subject')
 
 class ExamSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Exam
         fields = "__all__"
-        # fields = ('examid', 'subid_exam', 'nameexam', 'examno', 
-        #           'numexam', 'setexam', 'imganswers_format_path', 'std_csv_path',)
+        # fields = ('examid', 'subid', 'nameexam', 'examno', 
+        #           'numberofexams', 'numberofexamsets', 'answersheetformat', 'imganswersheetformat_path',
+        #           'std_csv_path', 'sequencesteps', 'showscores', 'sendmail',
+        #           'statusexam', 'createtime_exam', 'deletetime_exam')
 
 class ExamanswersSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Examanswers
         fields = "__all__"
-        # fields = ('examanswersid', 'examid_ans', 'setexamans', 'scoringcriteria', 
-        #           'papeans_path',)
+        # fields = ('examanswersid', 'examid', 'examnoanswers', 'scoringcriteria', 
+        #           'choiceanswers', 'papeans_path',)
 
 class ExaminformationSerializer(serializers.ModelSerializer):
-    
-        class Meta:
-            model = Examinformation
-            fields = "__all__"
-            # fields = ('examinfoid', 'examid_info', 'stdid', 'subidstd', 
-            #           'examseatnumber', 'setexaminfo', 'section', 'score',
-            #          'correct', 'wrong', 'unresponsive', 'anschoicestd',
-            #         'activatekey_exan', 'imgansstd_path',)
+    class Meta:
+        model = Examinformation
+        fields = "__all__"
+        # fields = ('examinfoid', 'examid', 'stdid', 'stdemail',
+        #           'subjectidstd', 'examseatnumber', 'setexaminfo', 'section',
+        #           'score', 'correct', 'wrong', 'unresponsive',
+        #           'itemanalysis', 'anschoicestd', 'imgansstd_path', 'errortype'
+        #           'createtime_std')
 
-# class ErrorsanswersheetSerializer(serializers.ModelSerializer):
-    
-#         class Meta:
-#             model = Errorsanswersheet
-#             fields = "__all__"
-#             # fields = ('erroranssheetid', 'errorexamid_info', 'errorstdid', 'errorsubidstd',
-#             #           'errorexamseatnumber', 'errorsetexaminfo', 'errorsection', 'errortype',
-#             #           'errorimgansstd_path',)
+class ChapterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Chapter
+        fields = "__all__"
+        # fields = ('chapterid', 'userid', 'namechapter', 'infochapter',)
 
-class LessonSerializer(serializers.ModelSerializer):
-    
-        class Meta:
-            model = Lesson
-            fields = "__all__"
-            # fields = ('lessonid', 'userid_lesson', 'namelesson', 'infolesson',)
+class SubchapterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Subchapter
+        fields = "__all__"
+        # fields = ('subchapterid', 'chapterid', 'numsubchapter', 'namesubchapter',
+        #           'infosubchapter',)
 
-class LessonanswerSerializer(serializers.ModelSerializer):
-    
-        class Meta:
-            model = Lessonanswer
-            fields = "__all__"
-            # fields = ('lessonandanswer', 'examanswersid_lesans', 'sublessonid_lesans', 'choicelesson',)
-
-class QueheaddetailsSerializer(serializers.ModelSerializer):
-    
-        class Meta:
-            model = Queheaddetails
-            fields = "__all__"
-            # fields = ('queheaddetailsid', 'quesheetid_head', 'quehead1', 'quehead2',
-            #          'quehead3', 'quehead4', 'quehead5',)
+class ChapteranswerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Chapteranswer
+        fields = "__all__"
+        # fields = ('chapteranswerid', 'examanswersid', 'subchapterid', 'answerchapter',)
 
 class QuesheetSerializer(serializers.ModelSerializer):
-        
-            class Meta:
-                model = Quesheet
-                fields = "__all__"
-                # fields = ('quesheetid', 'userid_que', 'quesheetname', 'quesheettopicname',
-                #          'detailslineone', 'detailslinetwo', 'explanation', 'symbolposition', 
-                #          'imglogoquesheet_path', imgquesheet_path', 'activatekey_que', 'datetimestart',
-                #          'datetimeend', 'statusquesheet',)
+    class Meta:
+        model = Quesheet
+        fields = "__all__"
+        # fields = ('quesheetid', 'userid', 'quesheetname', 'quesheettopicname',
+        #           'detailslineone', 'detailslinetwo', 'explanation', 'imgquesheet_path', 
+        #           'datetimestart', 'datetimeend', 'statusquesheet', 'deletetime_quesheet', 
+        #           'createtime_quesheet',)
+
+class QueheaddetailsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Queheaddetails
+        fields = "__all__"
+        # fields = ('queheaddetailsid', 'quesheetid', 'quehead1', 'quehead2',
+        #           'quehead3', 'quehead4', 'quehead5',)
 
 class QuetopicdetailsSerializer(serializers.ModelSerializer):
-        
-            class Meta:
-                model = Quetopicdetails
-                fields = "__all__"
-                # fields = ('quetopicdetailsid', 'quesheetid_topic', 'quetopicnum', 'quetopicdetails',
-                #          'quetopicformat', 'quetopictype',)
+    class Meta:
+        model = Quetopicdetails
+        fields = "__all__"
+        # fields = ('quetopicdetailsid', 'quesheetid', 'quetopicnum', 'quetopicdetails',
+        #           'quetopicformat')
 
 class QueinformationSerializer(serializers.ModelSerializer):
-        
-            class Meta:
-                model = Queinformation
-                fields = "__all__"
-                # fields = ('queinfoid', 'quesheetid_queinfo', 'ansquehead', 'ansquetopic',
-                #          'imgansstd_path', 'status_queinfo',)
-
-class RequestSerializer(serializers.ModelSerializer):
-        
-            class Meta:
-                model = Request
-                fields = "__all__"
-                # fields = ('requestid', 'userid_request', 'imgrequest_path', 'status_request',)
-
-class RoleSerializer(serializers.ModelSerializer):
-        
-            class Meta:
-                model = Role
-                fields = "__all__"
-                # fields = ('typesid', 'typesname', 'limitsub', 'limitque')
-
-class SublessonSerializer(serializers.ModelSerializer):
-        
-            class Meta:
-                model = Sublesson
-                fields = "__all__"
-                # fields = ('sublessonid', 'lessonid_sublessonid', 'numlesson', 'namelesson',
-                #           'infolesson',)
-
-class SubjectSerializer(serializers.ModelSerializer):
-        
-            class Meta:
-                model = Subject
-                fields = "__all__"
-                # fields = ('subid', 'userid_sub', 'subjectid', 'subname',
-                #           'year', 'semester',)
+    class Meta:
+        model = Queinformation
+        fields = "__all__"
+        # fields = ('queinfoid', 'quesheetid', 'ansquehead', 'ansquetopic',
+        #           'imgansstd_path', 'status_queinfo', 'errortype', 'createtime_queinfo')

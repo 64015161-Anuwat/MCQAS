@@ -52,9 +52,22 @@ def create_questionnaire_sheet(dstpath,head_1,detail1,detail2,part_1,part_2,qrco
         else:
             QR = cv2.imread(qrcode)
 
-        QR = cv2.resize(QR,(80,80))
-        x_offset=2351
-        y_offset=51
+        # QR = cv2.resize(QR,(80,80))
+        # QR = cv2.resize(QR,(100,100))
+        # QR = cv2.resize(QR,(120,120))
+        QR = cv2.resize(QR, (200, 200))
+        ####### no border
+        # x_offset=2349
+        # x_offset=2329
+        # x_offset=2309
+        x_offset=2225
+        # y_offset=53
+        y_offset=3250
+        ####### border
+        # x_offset=2351
+        # x_offset=2331
+        # x_offset=2311
+        # y_offset=51
         img [y_offset:y_offset+QR.shape[0], x_offset:x_offset+QR.shape[1]]=QR
 
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -299,7 +312,7 @@ def create_questionnaire_sheet(dstpath,head_1,detail1,detail2,part_1,part_2,qrco
 
         parttree = 150
         for line2 in range(2):
-            cv2.line(img,(parttree,3290+(100*line2)),(width-parttree,3290+(100*line2)),(0,0,0),2)
+            cv2.line(img,(parttree,3290+(100*line2)),(width-parttree-200,3290+(100*line2)),(0,0,0),2)
 
         if(error == ""):
             cv2.imwrite(dstpath+"questionnaire_sheet.jpg", img)

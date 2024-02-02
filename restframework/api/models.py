@@ -8,26 +8,44 @@
 from django.db import models
 
 
-class Checkscore(models.Model):
-    scoreid = models.AutoField(db_column='ScoreID', primary_key=True)  # Field name made lowercase.
-    userid_score = models.ForeignKey('User', models.DO_NOTHING, db_column='UserID_Score', blank=True, null=True)  # Field name made lowercase.
-    activatekey_score = models.TextField(db_column='ActivateKey_Score', blank=True, null=True)  # Field name made lowercase.
+class Chapter(models.Model):
+    chapterid = models.AutoField(db_column='ChapterID', primary_key=True)  # Field name made lowercase.
+    userid = models.ForeignKey('User', models.DO_NOTHING, db_column='UserID', blank=True, null=True)  # Field name made lowercase.
+    namechapter = models.TextField(db_column='NameChapter', blank=True, null=True)  # Field name made lowercase.
+    infochapter = models.TextField(db_column='InfoChapter', blank=True, null=True)  # Field name made lowercase.
 
     class Meta:
         managed = False
-        db_table = 'CheckScore'
+        db_table = 'Chapter'
+
+
+class Chapteranswer(models.Model):
+    chapteranswerid = models.AutoField(db_column='ChapterAnswerID', primary_key=True)  # Field name made lowercase.
+    examanswersid = models.ForeignKey('Examanswers', models.DO_NOTHING, db_column='ExamAnswersID', blank=True, null=True)  # Field name made lowercase.
+    subchapterid = models.ForeignKey('Subchapter', models.DO_NOTHING, db_column='SubChapterID', blank=True, null=True)  # Field name made lowercase.
+    answerchapter = models.TextField(db_column='AnswerChapter', blank=True, null=True)  # Field name made lowercase.
+
+    class Meta:
+        managed = False
+        db_table = 'ChapterAnswer'
 
 
 class Exam(models.Model):
     examid = models.AutoField(db_column='ExamID', primary_key=True)  # Field name made lowercase.
-    subid_exam = models.ForeignKey('Subject', models.DO_NOTHING, db_column='SubID_exam', blank=True, null=True)  # Field name made lowercase.
-    nameexam = models.TextField(db_column='NameExam', blank=True, null=True)  # Field name made lowercase.
+    subid = models.ForeignKey('Subject', models.DO_NOTHING, db_column='SubID', blank=True, null=True)  # Field name made lowercase.
+    examname = models.TextField(db_column='ExamName', blank=True, null=True)  # Field name made lowercase.
     examno = models.IntegerField(db_column='ExamNo', blank=True, null=True)  # Field name made lowercase.
-    numexam = models.IntegerField(db_column='NumExam', blank=True, null=True)  # Field name made lowercase.
-    setexam = models.IntegerField(db_column='SetExam', blank=True, null=True)  # Field name made lowercase.
-    imganswers_format_path = models.TextField(db_column='ImgAnswerS_format_path', blank=True, null=True)  # Field name made lowercase.
+    numberofexams = models.IntegerField(db_column='NumberofExams', blank=True, null=True)  # Field name made lowercase.
+    numberofexamsets = models.IntegerField(db_column='NumberofExamSets', blank=True, null=True)  # Field name made lowercase.
+    answersheetformat = models.TextField(db_column='AnswerSheetFormat', blank=True, null=True)  # Field name made lowercase.
+    imganswersheetformat_path = models.TextField(db_column='ImgAnswerSheetformat_path', blank=True, null=True)  # Field name made lowercase.
     std_csv_path = models.TextField(db_column='Std_csv_path', blank=True, null=True)  # Field name made lowercase.
-    createtime_exam = models.DateTimeField(db_column='CreateTime_Exam', blank=True, null=True)  # Field name made lowercase.
+    sequencesteps = models.TextField(db_column='SequenceSteps', blank=True, null=True)  # Field name made lowercase.
+    showscores = models.IntegerField(db_column='ShowScores', blank=True, null=True)  # Field name made lowercase.
+    sendemail = models.IntegerField(db_column='SendEmail', blank=True, null=True)  # Field name made lowercase.
+    statusexam = models.TextField(db_column='StatusExam', blank=True, null=True)  # Field name made lowercase.
+    deletetimeexam = models.DateTimeField(db_column='DeleteTimeExam', blank=True, null=True)  # Field name made lowercase.
+    createtimeexam = models.DateTimeField(db_column='CreateTimeExam', blank=True, null=True)  # Field name made lowercase.
 
     class Meta:
         managed = False
@@ -36,11 +54,11 @@ class Exam(models.Model):
 
 class Examanswers(models.Model):
     examanswersid = models.AutoField(db_column='ExamAnswersID', primary_key=True)  # Field name made lowercase.
-    examid_ans = models.ForeignKey(Exam, models.DO_NOTHING, db_column='ExamID_Ans', blank=True, null=True)  # Field name made lowercase.
-    setexamans = models.CharField(db_column='SetExamAns', max_length=2, blank=True, null=True)  # Field name made lowercase.
+    examid = models.ForeignKey(Exam, models.DO_NOTHING, db_column='ExamID', blank=True, null=True)  # Field name made lowercase.
+    examnoanswers = models.CharField(db_column='ExamNoAnswers', max_length=2, blank=True, null=True)  # Field name made lowercase.
     scoringcriteria = models.TextField(db_column='ScoringCriteria', blank=True, null=True)  # Field name made lowercase.
+    choiceanswers = models.TextField(db_column='ChoiceAnswers', blank=True, null=True)  # Field name made lowercase.
     papeans_path = models.TextField(db_column='PapeAns_path', blank=True, null=True)  # Field name made lowercase.
-    answers = models.TextField(db_column='Answers', blank=True, null=True)  # Field name made lowercase.
 
     class Meta:
         managed = False
@@ -48,53 +66,32 @@ class Examanswers(models.Model):
 
 
 class Examinformation(models.Model):
-    examinfoid = models.AutoField(db_column='ExaminfoID', primary_key=True)  # Field name made lowercase.
-    examid_info = models.ForeignKey(Exam, models.DO_NOTHING, db_column='ExamID_info', blank=True, null=True)  # Field name made lowercase.
+    examinfoid = models.AutoField(db_column='ExamInfoID', primary_key=True)  # Field name made lowercase.
+    examid = models.ForeignKey(Exam, models.DO_NOTHING, db_column='ExamID', blank=True, null=True)  # Field name made lowercase.
     stdid = models.CharField(db_column='StdID', max_length=20, blank=True, null=True)  # Field name made lowercase.
-    subidstd = models.CharField(db_column='SubIDStd', max_length=20, blank=True, null=True)  # Field name made lowercase.
+    stdemail = models.CharField(db_column='StdEmail', max_length=255, blank=True, null=True)  # Field name made lowercase.
+    subjectidstd = models.CharField(db_column='SubjectIDStd', max_length=20, blank=True, null=True)  # Field name made lowercase.
     examseatnumber = models.CharField(db_column='ExamSeatNumber', max_length=20, blank=True, null=True)  # Field name made lowercase.
-    setexaminfo = models.CharField(db_column='SetExamInfo', max_length=2, blank=True, null=True)  # Field name made lowercase.
+    setexaminfo = models.IntegerField(db_column='SetExamInfo', blank=True, null=True)  # Field name made lowercase.
     section = models.CharField(db_column='Section', max_length=20, blank=True, null=True)  # Field name made lowercase.
     score = models.IntegerField(db_column='Score', blank=True, null=True)  # Field name made lowercase.
     correct = models.IntegerField(db_column='Correct', blank=True, null=True)  # Field name made lowercase.
     wrong = models.IntegerField(db_column='Wrong', blank=True, null=True)  # Field name made lowercase.
     unresponsive = models.IntegerField(db_column='Unresponsive', blank=True, null=True)  # Field name made lowercase.
+    itemanalysis = models.TextField(db_column='ItemAnalysis', blank=True, null=True)  # Field name made lowercase.
     anschoicestd = models.TextField(db_column='AnsChoiceStd', blank=True, null=True)  # Field name made lowercase.
-    activatekey_exan = models.CharField(db_column='ActivateKey_Exan', max_length=100, blank=True, null=True)  # Field name made lowercase.
     imgansstd_path = models.TextField(db_column='ImgAnsStd_path', blank=True, null=True)  # Field name made lowercase.
-    createtime_examinfo = models.DateTimeField(db_column='CreateTime_Examinfo', blank=True, null=True)  # Field name made lowercase.
     errorstype = models.TextField(db_column='ErrorsType', blank=True, null=True)  # Field name made lowercase.
+    createtimeexaminfo = models.DateTimeField(db_column='CreateTimeExaminfo', blank=True, null=True)  # Field name made lowercase.
 
     class Meta:
         managed = False
-        db_table = 'Examinformation'
-
-
-class Lesson(models.Model):
-    lessonid = models.AutoField(db_column='LessonID', primary_key=True)  # Field name made lowercase.
-    userid_lesson = models.ForeignKey('User', models.DO_NOTHING, db_column='UserID_Lesson', blank=True, null=True)  # Field name made lowercase.
-    namelesson = models.TextField(db_column='NameLesson', blank=True, null=True)  # Field name made lowercase.
-    infolesson = models.TextField(db_column='InfoLesson', blank=True, null=True)  # Field name made lowercase.
-
-    class Meta:
-        managed = False
-        db_table = 'Lesson'
-
-
-class Lessonanswer(models.Model):
-    lessonandanswer = models.AutoField(db_column='LessonAndAnswer', primary_key=True)  # Field name made lowercase.
-    examanswersid_lesans = models.ForeignKey(Examanswers, models.DO_NOTHING, db_column='ExamAnswersID_LesAns', blank=True, null=True)  # Field name made lowercase.
-    sublessonid_lesans = models.ForeignKey('Sublesson', models.DO_NOTHING, db_column='SubLessonID_LesAns', blank=True, null=True)  # Field name made lowercase.
-    choicelesson = models.TextField(db_column='ChoiceLesson', blank=True, null=True)  # Field name made lowercase.
-
-    class Meta:
-        managed = False
-        db_table = 'LessonAnswer'
+        db_table = 'ExamInformation'
 
 
 class Queheaddetails(models.Model):
     queheaddetailsid = models.AutoField(db_column='QueHeadDetailsID', primary_key=True)  # Field name made lowercase.
-    quesheetid_head = models.ForeignKey('Quesheet', models.DO_NOTHING, db_column='QueSheetID_Head', blank=True, null=True)  # Field name made lowercase.
+    quesheetid = models.ForeignKey('Quesheet', models.DO_NOTHING, db_column='QueSheetID', blank=True, null=True)  # Field name made lowercase.
     quehead1 = models.TextField(db_column='QueHead1', blank=True, null=True)  # Field name made lowercase.
     quehead2 = models.TextField(db_column='QueHead2', blank=True, null=True)  # Field name made lowercase.
     quehead3 = models.TextField(db_column='QueHead3', blank=True, null=True)  # Field name made lowercase.
@@ -106,21 +103,35 @@ class Queheaddetails(models.Model):
         db_table = 'QueHeadDetails'
 
 
+class Queinformation(models.Model):
+    queinfoid = models.AutoField(db_column='QueInfoID', primary_key=True)  # Field name made lowercase.
+    quesheetid = models.ForeignKey('Quesheet', models.DO_NOTHING, db_column='QueSheetID', blank=True, null=True)  # Field name made lowercase.
+    ansquehead = models.TextField(db_column='AnsQueHead', blank=True, null=True)  # Field name made lowercase.
+    ansquetopic = models.TextField(db_column='AnsQueTopic', blank=True, null=True)  # Field name made lowercase.
+    imgansstd_path = models.TextField(db_column='ImgAnsStd_path', blank=True, null=True)  # Field name made lowercase.
+    status_queinfo = models.TextField(db_column='Status_QueInfo', blank=True, null=True)  # Field name made lowercase.
+    errorstype = models.TextField(db_column='ErrorsType', blank=True, null=True)  # Field name made lowercase.
+    createtimequesheetinfo = models.DateTimeField(db_column='CreateTimeQueSheetinfo', blank=True, null=True)  # Field name made lowercase.
+
+    class Meta:
+        managed = False
+        db_table = 'QueInformation'
+
+
 class Quesheet(models.Model):
     quesheetid = models.AutoField(db_column='QueSheetID', primary_key=True)  # Field name made lowercase.
-    userid_que = models.ForeignKey('User', models.DO_NOTHING, db_column='UserID_Que', blank=True, null=True)  # Field name made lowercase.
+    userid = models.ForeignKey('User', models.DO_NOTHING, db_column='UserID', blank=True, null=True)  # Field name made lowercase.
     quesheetname = models.TextField(db_column='QueSheetName', blank=True, null=True)  # Field name made lowercase.
     quesheettopicname = models.TextField(db_column='QueSheetTopicName', blank=True, null=True)  # Field name made lowercase.
     detailslineone = models.TextField(db_column='DetailsLineOne', blank=True, null=True)  # Field name made lowercase.
-    detailslinetwo = models.TextField(db_column='DetailsLinetwo', blank=True, null=True)  # Field name made lowercase.
+    detailslinetwo = models.TextField(db_column='DetailsLineTwo', blank=True, null=True)  # Field name made lowercase.
     explanation = models.TextField(db_column='Explanation', blank=True, null=True)  # Field name made lowercase.
-    symbolposition = models.CharField(db_column='Symbolposition', max_length=10, blank=True, null=True)  # Field name made lowercase.
     imgquesheet_path = models.TextField(db_column='ImgQueSheet_path', blank=True, null=True)  # Field name made lowercase.
-    activatekey_que = models.TextField(db_column='ActivateKey_Que', blank=True, null=True)  # Field name made lowercase.
     datetimestart = models.DateTimeField(db_column='DateTimeStart', blank=True, null=True)  # Field name made lowercase.
     datetimeend = models.DateTimeField(db_column='DateTimeEnd', blank=True, null=True)  # Field name made lowercase.
-    statusquesheet = models.CharField(db_column='StatusQueSheet', max_length=10, blank=True, null=True)  # Field name made lowercase.
-    createtime_quesheet = models.DateTimeField(db_column='CreateTime_QueSheet', blank=True, null=True)  # Field name made lowercase.
+    statusquesheet = models.TextField(db_column='statusQueSheet', blank=True, null=True)  # Field name made lowercase.
+    deletetimequesheet = models.DateTimeField(db_column='DeleteTimeQueSheet', blank=True, null=True)  # Field name made lowercase.
+    createtimequesheet = models.DateTimeField(db_column='CreateTimeQueSheet', blank=True, null=True)  # Field name made lowercase.
 
     class Meta:
         managed = False
@@ -129,83 +140,74 @@ class Quesheet(models.Model):
 
 class Quetopicdetails(models.Model):
     quetopicdetailsid = models.AutoField(db_column='QueTopicDetailsID', primary_key=True)  # Field name made lowercase.
-    quesheetid_topic = models.ForeignKey(Quesheet, models.DO_NOTHING, db_column='QueSheetID_Topic', blank=True, null=True)  # Field name made lowercase.
+    quesheetid = models.ForeignKey(Quesheet, models.DO_NOTHING, db_column='QueSheetID', blank=True, null=True)  # Field name made lowercase.
     quetopicnum = models.TextField(db_column='QueTopicNum', blank=True, null=True)  # Field name made lowercase.
     quetopicdetails = models.TextField(db_column='QueTopicDetails', blank=True, null=True)  # Field name made lowercase.
     quetopicformat = models.TextField(db_column='QueTopicFormat', blank=True, null=True)  # Field name made lowercase.
-    quetopictype = models.TextField(db_column='QueTopicType', blank=True, null=True)  # Field name made lowercase.
 
     class Meta:
         managed = False
         db_table = 'QueTopicDetails'
 
 
-class Queinformation(models.Model):
-    queinfoid = models.AutoField(db_column='QueinfoID', primary_key=True)  # Field name made lowercase.
-    quesheetid_queinfo = models.ForeignKey(Quesheet, models.DO_NOTHING, db_column='QueSheetID_QueInfo', blank=True, null=True)  # Field name made lowercase.
-    ansquehead = models.TextField(db_column='AnsQueHead', blank=True, null=True)  # Field name made lowercase.
-    ansquetopic = models.TextField(db_column='AnsQueTopic', blank=True, null=True)  # Field name made lowercase.
-    imgansstd_path = models.TextField(db_column='ImgAnsStd_path', blank=True, null=True)  # Field name made lowercase.
-    status_queinfo = models.CharField(db_column='Status_QueInfo', max_length=10, blank=True, null=True)  # Field name made lowercase.
-    createtime_quesheetinfo = models.DateTimeField(db_column='CreateTime_QueSheetinfo', blank=True, null=True)  # Field name made lowercase.
-
-    class Meta:
-        managed = False
-        db_table = 'Queinformation'
-
-
 class Request(models.Model):
     requestid = models.AutoField(db_column='RequestID', primary_key=True)  # Field name made lowercase.
-    userid_request = models.ForeignKey('User', models.DO_NOTHING, db_column='UserID_Request', blank=True, null=True)  # Field name made lowercase.
+    userid = models.ForeignKey('User', models.DO_NOTHING, db_column='UserID', blank=True, null=True)  # Field name made lowercase.
     imgrequest_path = models.TextField(db_column='ImgRequest_path', blank=True, null=True)  # Field name made lowercase.
-    status_request = models.IntegerField(db_column='Status_Request', blank=True, null=True)  # Field name made lowercase.
+    notes = models.TextField(db_column='Notes', blank=True, null=True)  # Field name made lowercase.
+    status_request = models.TextField(db_column='Status_Request', blank=True, null=True)  # Field name made lowercase.
 
     class Meta:
         managed = False
         db_table = 'Request'
 
 
-class Role(models.Model):
-    typesid = models.AutoField(db_column='TypesID', primary_key=True)  # Field name made lowercase.
-    typesname = models.CharField(db_column='TypesName', max_length=40, blank=True, null=True)  # Field name made lowercase.
-    limitsub = models.IntegerField(db_column='LimitSub', blank=True, null=True)  # Field name made lowercase.
-    limitque = models.IntegerField(db_column='LimitQue', blank=True, null=True)  # Field name made lowercase.
+class Subchapter(models.Model):
+    subchapterid = models.AutoField(db_column='SubChapterID', primary_key=True)  # Field name made lowercase.
+    chapterid = models.ForeignKey(Chapter, models.DO_NOTHING, db_column='ChapterID', blank=True, null=True)  # Field name made lowercase.
+    numsubchapter = models.TextField(db_column='NumSubChapter', blank=True, null=True)  # Field name made lowercase.
+    namesubchapter = models.TextField(db_column='NameSubChapter', blank=True, null=True)  # Field name made lowercase.
+    infosubchapter = models.TextField(db_column='InfoSubChapter', blank=True, null=True)  # Field name made lowercase.
 
     class Meta:
         managed = False
-        db_table = 'Role'
-
-
-class Sublesson(models.Model):
-    sublessonid = models.AutoField(db_column='SubLessonID', primary_key=True)  # Field name made lowercase.
-    lessonid_sublessonid = models.ForeignKey(Lesson, models.DO_NOTHING, db_column='LessonID_SubLessonID', blank=True, null=True)  # Field name made lowercase.
-    numlesson = models.TextField(db_column='NumLesson', blank=True, null=True)  # Field name made lowercase.
-    namelesson = models.TextField(db_column='NameLesson', blank=True, null=True)  # Field name made lowercase.
-    infolesson = models.TextField(db_column='InfoLesson', blank=True, null=True)  # Field name made lowercase.
-
-    class Meta:
-        managed = False
-        db_table = 'SubLesson'
+        db_table = 'SubChapter'
 
 
 class Subject(models.Model):
     subid = models.AutoField(db_column='SubID', primary_key=True)  # Field name made lowercase.
-    userid_sub = models.ForeignKey('User', models.DO_NOTHING, db_column='UserID_Sub', blank=True, null=True)  # Field name made lowercase.
-    subjectid = models.CharField(db_column='SubjectID', max_length=20, blank=True, null=True)  # Field name made lowercase.
-    subname = models.CharField(db_column='SubName', max_length=100, blank=True, null=True)  # Field name made lowercase.
+    userid = models.ForeignKey('User', models.DO_NOTHING, db_column='UserID', blank=True, null=True)  # Field name made lowercase.
+    subjectid = models.CharField(db_column='SubjectID', max_length=30, blank=True, null=True)  # Field name made lowercase.
+    subjectname = models.CharField(db_column='SubjectName', max_length=100, blank=True, null=True)  # Field name made lowercase.
     year = models.CharField(db_column='Year', max_length=10, blank=True, null=True)  # Field name made lowercase.
     semester = models.CharField(db_column='Semester', max_length=10, blank=True, null=True)  # Field name made lowercase.
+    statussubject = models.TextField(db_column='StatusSubject', blank=True, null=True)  # Field name made lowercase.
+    deletetimesubject = models.DateTimeField(db_column='DeleteTimeSubject', blank=True, null=True)  # Field name made lowercase.
+    createtimesubject = models.DateTimeField(db_column='CreateTimeSubject', blank=True, null=True)  # Field name made lowercase.
 
     class Meta:
         managed = False
         db_table = 'Subject'
 
 
+class Type(models.Model):
+    typesid = models.AutoField(db_column='TypesID', primary_key=True)  # Field name made lowercase.
+    typesname = models.CharField(db_column='TypesName', max_length=50, blank=True, null=True)  # Field name made lowercase.
+    limitsubject = models.IntegerField(db_column='LimitSubject', blank=True, null=True)  # Field name made lowercase.
+    limitexam = models.IntegerField(db_column='LimitExam', blank=True, null=True)  # Field name made lowercase.
+    limitque = models.IntegerField(db_column='LimitQue', blank=True, null=True)  # Field name made lowercase.
+
+    class Meta:
+        managed = False
+        db_table = 'Type'
+
+
 class User(models.Model):
     userid = models.AutoField(db_column='UserID', primary_key=True)  # Field name made lowercase.
-    email = models.CharField(db_column='Email', max_length=100, blank=True, null=True)  # Field name made lowercase.
+    email = models.CharField(db_column='Email', max_length=255, blank=True, null=True)  # Field name made lowercase.
     fullname = models.TextField(db_column='FullName', blank=True, null=True)  # Field name made lowercase.
     password = models.CharField(db_column='Password', max_length=255, blank=True, null=True)  # Field name made lowercase.
+    salt = models.CharField(max_length=64, blank=True, null=True)
     googleid = models.TextField(db_column='googleId', blank=True, null=True)  # Field name made lowercase.
     job = models.TextField(db_column='Job', blank=True, null=True)  # Field name made lowercase.
     department = models.TextField(db_column='Department', blank=True, null=True)  # Field name made lowercase.
@@ -215,9 +217,8 @@ class User(models.Model):
     usageformat = models.CharField(db_column='Usageformat', max_length=10, blank=True, null=True)  # Field name made lowercase.
     imge_kyc_path = models.TextField(db_column='ImgE_KYC_path', blank=True, null=True)  # Field name made lowercase.
     e_kyc = models.CharField(db_column='E_KYC', max_length=20, blank=True, null=True)  # Field name made lowercase.
-    typesid_user = models.ForeignKey(Role, models.DO_NOTHING, db_column='TypesID_User', blank=True, null=True)  # Field name made lowercase.
-    salt = models.CharField(db_column='Salt', max_length=64, blank=True, null=True)  # Field name made lowercase.
-    createtime_user = models.DateTimeField(db_column='CreateTime_User', blank=True, null=True)  # Field name made lowercase.
+    typesid = models.ForeignKey(Type, models.DO_NOTHING, db_column='TypesID', blank=True, null=True)  # Field name made lowercase.
+    createtimeuser = models.DateTimeField(db_column='CreateTimeUser', blank=True, null=True)  # Field name made lowercase.
 
     class Meta:
         managed = False

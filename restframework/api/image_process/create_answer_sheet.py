@@ -5,7 +5,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 def create_answer_sheet(c_h, dstpath, logo=None):
     try:
-        src ="assets\\"
+        src =os.getcwd()+"\\api\\image_process\\assets\\"
         height = 2481
         width = 3507
         margin = 50

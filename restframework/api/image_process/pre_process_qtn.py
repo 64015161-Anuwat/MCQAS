@@ -7,7 +7,12 @@ import sys
 
 def pre_process_qtn(srcpath, dstpath, filename):
     try:
+        isExist = os.path.exists(dstpath)
+        if isExist == False:
+            os.mkdir(dstpath)
+
         img = cv2.imread(srcpath+filename)
+        img = cv2.resize(img, (992, 1403))
         gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         blurred = cv2.GaussianBlur(gray_img, (5, 5), 0)
         edged = cv2.Canny(blurred, 30, 100)
@@ -21,7 +26,7 @@ def pre_process_qtn(srcpath, dstpath, filename):
         for i in contours:
             area = cv2.contourArea(i)
             if area > max_area:
-                epsilon = 0.01 * cv2.arcLength(i, True)
+                epsilon = 0.05 * cv2.arcLength(i, True)
                 approx = cv2.approxPolyDP(i, epsilon, True)
                 if len(approx) == 4 and area > 10000.0:
                     largest = approx
@@ -63,16 +68,16 @@ def pre_process_qtn(srcpath, dstpath, filename):
         height_th, width_th, ch = dst.shape
 
         mask1 = np.zeros(th.shape[:2], np.uint8)
-        mask1[0:35, 0:35]=255
+        mask1[0:100, 0:100]=255
 
         mask2 = np.zeros(th.shape[:2], np.uint8)
-        mask2[height_th-35:height_th, 0:35]=255
+        mask2[height_th-100:height_th, 0:100]=255
 
         mask3 = np.zeros(th.shape[:2], np.uint8)
-        mask3[0:35, width_th-35:width_th]=255
+        mask3[0:100, width_th-100:width_th]=255
 
         mask4 = np.zeros(th.shape[:2], np.uint8)
-        mask4[height_th-35:height_th, width_th-35:width_th]=255
+        mask4[height_th-100:height_th, width_th-100:width_th]=255
 
         mask = [mask1,mask2,mask3,mask4]
 
@@ -80,22 +85,22 @@ def pre_process_qtn(srcpath, dstpath, filename):
         havecon = False
         rotation = 0
         for i in range(4):
-                hist_mask = cv2.calcHist([th], [0], mask[i], [2], [0,256])
-                if hist_mask[0] > 400:
-                        rt = i
-                        havecon = True
+            hist_mask = cv2.calcHist([th], [0], mask[i], [2], [0,256])
+            if hist_mask[0] > 400:
+                rt = i
+                havecon = True
 
-                if havecon == True:
-                        if rt == 0 :
-                                rotation = -90
-                        elif rt == 1 :
-                                rotation = 180
-                        elif rt == 2 :
-                                rotation = 0
-                        elif rt == 3 :
-                                rotation = 90
-                else:
-                        return "Error : QRcode not found or QRcode not in corner at file: "+filename
+        if havecon == True:
+            if rt == 0 :
+                rotation = 90
+            elif rt == 1 :
+                rotation = -90
+            elif rt == 2 :
+                rotation = 180
+            elif rt == 3 :
+                rotation = 0
+        else:
+            return "Error : QRcode not found or QRcode not in corner at file: "+filename
                 
         scale = 1
         w = dst.shape[1]

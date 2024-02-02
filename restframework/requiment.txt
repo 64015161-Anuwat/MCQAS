@@ -8,3 +8,4 @@ cv2
 pyzbar
 qrcode
 django-cors-headers
+imutils

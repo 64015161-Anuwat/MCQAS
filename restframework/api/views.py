@@ -1,8 +1,13 @@
+from math import e
 import os
 import sys, errno  
 import shutil
 import csv
 import json
+import datetime
+import pandas as pd
+from h11 import Data
+from pandas import read_csv
 from rest_framework import status, viewsets, permissions, routers
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -22,6 +27,8 @@ from .image_process.chk_validate_ans import *
 from .image_process.chk_ans import *
 from .image_process.process_qrcode import *
 from .image_process.create_questionnaire_sheet import *
+from .image_process.pre_process_qtn import *
+from .image_process.process_qtn import *
 from .image_process.chk_validate_qtn import *
 
 @api_view(['GET'])
@@ -38,13 +45,6 @@ def overview(request):
             'Login': '/user/login/',
             'LoginGoogle': '/user/login/google/',
         },
-        'checkscore': {
-            'List': '/checkscore/',
-            'Create': '/checkscore/create/',
-            'Detail': '/checkscore/detail/<str:pk>/',
-            'Update': '/checkscore/update/<str:pk>/',
-            'Delete': '/checkscore/delete/<str:pk>/',
-        },
         'exam': {
             'List': '/exam/',
             'Create': '/exam/create/',
@@ -60,7 +60,7 @@ def overview(request):
             'Detail': '/examanswers/detail/<str:pk>/',
             'Update': '/examanswers/update/<str:pk>/',
             'Delete': '/examanswers/delete/<str:pk>/',
-            'UploadPaperans': '/examanswers/upload/paperans/',
+            'UploadPaper': '/examanswers/upload/paper/',
         },
         'examinformation': {
             'List': '/examinformation/',
@@ -68,28 +68,21 @@ def overview(request):
             'Detail': '/examinformation/detail/<str:pk>/',
             'Update': '/examinformation/update/<str:pk>/',
             'Delete': '/examinformation/delete/<str:pk>/',
-            'UploadPaperans': '/examinformation/upload/paperans/',
+            'UploadPaper': '/examinformation/upload/paper/',
         },
-        'errorsanswersheet': {
-            'List': '/errorsanswersheet/',
-            'Create': '/errorsanswersheet/create/',
-            'Detail': '/errorsanswersheet/detail/<str:pk>/',
-            'Update': '/errorsanswersheet/update/<str:pk>/',
-            'Delete': '/errorsanswersheet/delete/<str:pk>/',
+        'chapter': {
+            'List': '/chapter/',
+            'Create': '/chapter/create/',
+            'Detail': '/chapter/detail/<str:pk>/',
+            'Update': '/chapter/update/<str:pk>/',
+            'Delete': '/chapter/delete/<str:pk>/',
         },
-        'lesson': {
-            'List': '/lesson/',
-            'Create': '/lesson/create/',
-            'Detail': '/lesson/detail/<str:pk>/',
-            'Update': '/lesson/update/<str:pk>/',
-            'Delete': '/lesson/delete/<str:pk>/',
-        },
-        'lessonanswer': {
-            'List': '/lessonanswer/',
-            'Create': '/lessonanswer/create/',
-            'Detail': '/lessonanswer/detail/<str:pk>/',
-            'Update': '/lessonanswer/update/<str:pk>/',
-            'Delete': '/lessonanswer/delete/<str:pk>/',
+        'chapteranswer': {
+            'List': '/chapteranswer/',
+            'Create': '/chapteranswer/create/',
+            'Detail': '/chapteranswer/detail/<str:pk>/',
+            'Update': '/chapteranswer/update/<str:pk>/',
+            'Delete': '/chapteranswer/delete/<str:pk>/',
         },
         'queheaddetails': {
             'List': '/queheaddetails/',
@@ -118,6 +111,7 @@ def overview(request):
             'Detail': '/queinformation/detail/<str:pk>/',
             'Update': '/queinformation/update/<str:pk>/',
             'Delete': '/queinformation/delete/<str:pk>/',
+            'UploadPaper': '/queinformation/upload/paper/',
         },
         'request': {
             'List': '/request/',
@@ -126,19 +120,19 @@ def overview(request):
             'Update': '/request/update/<str:pk>/',
             'Delete': '/request/delete/<str:pk>/',
         },
-        'role': {
-            'List': '/role/',
-            'Create': '/role/create/',
-            'Detail': '/role/detail/<str:pk>/',
-            'Update': '/role/update/<str:pk>/',
-            'Delete': '/role/delete/<str:pk>/',
+        'type': {
+            'List': '/type/',
+            'Create': '/type/create/',
+            'Detail': '/type/detail/<str:pk>/',
+            'Update': '/type/update/<str:pk>/',
+            'Delete': '/type/delete/<str:pk>/',
         },
-        'sublesson': {
-            'List': '/sublesson/',
-            'Create': '/sublesson/create/',
-            'Detail': '/sublesson/detail/<str:pk>/',
-            'Update': '/sublesson/update/<str:pk>/',
-            'Delete': '/sublesson/delete/<str:pk>/',
+        'subchapter': {
+            'List': '/subchapter/',
+            'Create': '/subchapter/create/',
+            'Detail': '/subchapter/detail/<str:pk>/',
+            'Update': '/subchapter/update/<str:pk>/',
+            'Delete': '/subchapter/delete/<str:pk>/',
         },
         'subject': {
             'List': '/subject/',
@@ -170,6 +164,7 @@ def userCreate(request):
     salt, hashed_password = hash_password(data['password'])
     data['password'] = hashed_password
     data['salt'] = salt
+    data['createtimeuser'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     serializer = UserSerializer(data=data)
     if serializer.is_valid():
         serializer.save()
@@ -180,6 +175,10 @@ def userCreate(request):
 @api_view(['POST'])
 def userUpdate(request, pk):
     user = User.objects.get(userid=pk)
+    data = request.data
+    salt, hashed_password = hash_password(data['password'])
+    data['password'] = hashed_password
+    data['salt'] = salt
     serializer = UserSerializer(instance=user, data=request.data)
     if serializer.is_valid():
         serializer.save()
@@ -222,12 +221,11 @@ def userLogin(request):
                 "userid" : queryset[0].userid,
                 "email" : queryset[0].email,
                 "fullname" : queryset[0].fullname,
-                "job" : queryset[0].job,
-                "department" : queryset[0].department,
-                "faculty" : queryset[0].faculty,
-                "workplace" : queryset[0].workplace,
-                "tel" : queryset[0].tel,
-                            })
+                "googleid" : queryset[0].googleid,
+                "usageformat" : queryset[0].usageformat,
+                "e_kyc" : queryset[0].e_kyc,
+                "typesid" : queryset[0].typesid.typesid,
+            }, status=status.HTTP_200_OK)
         else:
             return Response({"err" : "รหัสผ่านไม่ถูกต้อง"}, status=status.HTTP_401_UNAUTHORIZED)
     else:
@@ -239,52 +237,16 @@ def userLoginGoogle(request):
     queryset = User.objects.filter(googleid=googleid)
     if queryset.count() > 0:
         return Response({
-            "userid" : queryset[0].userid,
-            "email" : queryset[0].email,
-            "fullname" : queryset[0].fullname,
-            "job" : queryset[0].job,
-            "department" : queryset[0].department,
-            "faculty" : queryset[0].faculty,
-            "workplace" : queryset[0].workplace,
-            "tel" : queryset[0].tel,
-                        })
+                "userid" : queryset[0].userid,
+                "email" : queryset[0].email,
+                "fullname" : queryset[0].fullname,
+                "googleid" : queryset[0].googleid,
+                "usageformat" : queryset[0].usageformat,
+                "e_kyc" : queryset[0].e_kyc,
+                "typesid" : queryset[0].typesid.typesid,
+        }, status=status.HTTP_200_OK)
     else:
         return Response({"err" : "บัญชี Google ไม่ถูกต้อง"}, status=status.HTTP_401_UNAUTHORIZED)
-
-##########################################################################################
-#- Checkscore
-@api_view(['GET'])
-def checkscoreList(request):
-    queryset = Checkscore.objects.all().order_by('scoreid')
-    serializer = CheckscoreSerializer(queryset, many=True)
-    return Response(serializer.data, status=status.HTTP_200_OK)
-
-@api_view(['GET'])
-def checkscoreDetail(request, pk):
-    queryset = Checkscore.objects.get(scoreid=pk)
-    serializer = CheckscoreSerializer(queryset, many=False)
-    return Response(serializer.data, status=status.HTTP_200_OK)
-
-@api_view(['POST'])
-def checkscoreCreate(request):
-    serializer = CheckscoreSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-    return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-@api_view(['POST'])
-def checkscoreUpdate(request, pk):
-    checkscore = Checkscore.objects.get(scoreid=pk)
-    serializer = CheckscoreSerializer(instance=checkscore, data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-    return Response(serializer.data, status=status.HTTP_200_OK)
-
-@api_view(['DELETE'])
-def checkscoreDelete(request, pk):
-    checkscore = Checkscore.objects.get(scoreid=pk)
-    checkscore.delete()
-    return Response({"msg" : "ลบคะแนนสำเร็จ"}, status=status.HTTP_200_OK)
 
 ##########################################################################################
 #- Exam
@@ -302,10 +264,19 @@ def examDetail(request, pk):
 
 @api_view(['POST'])
 def examCreate(request):
-    serializer = ExamSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-    return Response(serializer.data, status=status.HTTP_201_CREATED)
+    data = request.data
+    data['imganswersheetformat_path'] = request.build_absolute_uri("/media/original_answersheet/")
+    data['deletetimeexam'] = None
+    data['createtimeexam'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    exam = Exam.objects.filter(subid=data['subid'])
+    user = User.objects.get(userid=data['userid'])
+    if exam.count() < user.typesid.limitexam:
+        serializer = ExamSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    else:
+        return Response({"err" : "จำนวนข้อสอบของรายวิชานี้เกินที่กำหนด"}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])
 def examUpdate(request, pk):
@@ -324,10 +295,12 @@ def examDelete(request, pk):
 @api_view(['POST'])
 def examUploadCSV(request):
     file = request.FILES['file']
+    user = User.objects.get(userid=request.data['userid'])
     if file.name.endswith('.csv'):
         exam = Exam.objects.get(examid=request.data['examid'])
         fs = FileSystemStorage()
-        media = "/"+str(request.data['username'])+"/ans/"+str(exam.subid_exam.subid)+"/"+str(exam.examid)+"/student_list/"
+        print(exam.subid)
+        media = "/"+str(user.fullname)+"/ans/"+str(exam.subid.subid)+"/"+str(exam.examid)+"/student_list/"
         media_path = fs.path('')+media
         if not os.path.exists(media_path):
             os.makedirs(media_path)
@@ -335,24 +308,8 @@ def examUploadCSV(request):
             if os.path.isfile(os.path.join(media_path, filename)):
                 os.remove(os.path.join(media_path, filename))
         fs.save(media_path+"student_list.csv", file)
-        # fs.save(media_path+"student_key.csv", file)
 
-        key_file = open(media_path+"student_key.csv", 'w', encoding='utf-8', newline='')
-        writer = csv.writer(key_file)
-        list_file = open(media_path+"student_list.csv", 'r', encoding='utf-8', newline='')
-        try:
-            reader = csv.reader(list_file)
-            for index_rows, rows in enumerate(reader):
-                if index_rows == 0:
-                    row = zip([rows[0]],[rows[1]],[rows[2]],[rows[3]],["key"])
-                else:
-                    key = get_random_string(length=16)
-                    row = zip([rows[0]],[rows[1]],[rows[2]],[rows[3]],[key])
-                writer.writerows(row)
-        finally:
-            key_file.close()
-            list_file.close()
-        link_csv = request.build_absolute_uri("media/"+media+"student_list.csv")
+        link_csv = request.build_absolute_uri("/media/"+media+"student_list.csv")
         val = {"std_csv_path": link_csv}
         serializer = ExamSerializer(instance=exam, data=val)
         if serializer.is_valid():
@@ -366,10 +323,11 @@ def examUploadCSV(request):
 @api_view(['POST'])
 def examUploadLogo(request):
     file = request.FILES['file']
-    if file.name.endswith('.jpg'):
+    user = User.objects.get(userid=request.data['userid'])
+    if file.name.lower().endswith('.jpg') or file.name.lower().endswith('.jpeg'):
         exam = Exam.objects.get(examid=request.data['examid'])
         fs = FileSystemStorage()
-        media = "/"+str(request.data['username'])+"/ans/"+str(exam.subid_exam.subid)+"/"+str(exam.examid)+"/answersheet_format/"
+        media = "/"+str(user.fullname)+"/ans/"+str(exam.subid.subid)+"/"+str(exam.examid)+"/answersheet_format/"
         media_path = fs.path('')+media
         if not os.path.exists(media_path):
             os.makedirs(media_path)
@@ -380,12 +338,12 @@ def examUploadLogo(request):
         for i in range(1, 4):
             create_answer_sheet(i, media_path, logo=file_content)
             file.seek(0)
-        imganswers_format_path = request.build_absolute_uri("/media"+media+"Logo.jpg")
-        val = {"imganswers_format_path": imganswers_format_path}
+        imganswersheetformat_path = request.build_absolute_uri("/media"+media)
+        val = {"imganswersheetformat_path": imganswersheetformat_path}
         serializer = ExamSerializer(instance=exam, data=val)
         if serializer.is_valid():
             serializer.save()
-        return Response({"msg" : "อัปโหลดไฟล์ Logo สำเร็จ", "imganswers_format_path" : imganswers_format_path}, status=status.HTTP_201_CREATED)
+        return Response({"msg" : "อัปโหลดไฟล์ Logo สำเร็จ", "imganswersheetformat_path" : imganswersheetformat_path}, status=status.HTTP_201_CREATED)
         
     else:
         return Response({"err" : "สกุลไฟล์ไม่ถูกต้อง กรุณาเลือกไฟล์ .jpg"}, status=status.HTTP_400_BAD_REQUEST)
@@ -407,10 +365,17 @@ def examanswersDetail(request, pk):
 
 @api_view(['POST'])
 def examanswersCreate(request):
-    serializer = ExamanswersSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-    return Response(serializer.data, status=status.HTTP_201_CREATED)
+    data = request.data
+    exam = Exam.objects.get(examid=data['examid'])
+    examanswer = Examanswers.objects.filter(examid=data['examid'])
+    if examanswer.count() < int(exam.numberofexamsets):
+        serializer = ExamanswersSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    else:
+        return Response({"err" : "จำนวนชุดข้อสอบครบแล้ว"}, status=status.HTTP_400_BAD_REQUEST)
+    
 
 @api_view(['POST'])
 def examanswersUpdate(request, pk):
@@ -427,30 +392,23 @@ def examanswersDelete(request, pk):
     return Response({"msg" : "ลบเฉลยข้อสอบสำเร็จ"}, status=status.HTTP_200_OK)
 
 @api_view(['POST'])
-def examanswersUploadPaperans(request):
+def examanswersUploadPaper(request):
     file = request.FILES['file']
-    if not file.name.endswith('.jpg'):
-        return Response({"err" : "สกุลไฟล์ไม่ถูกต้อง กรุณาเลือกไฟล์ .jpg"}, status=status.HTTP_400_BAD_REQUEST)
-    else:
+    user = User.objects.get(userid=request.data['userid'])
+    print(file.name)
+    if file.name.lower().endswith('.jpg') or file.name.lower().endswith('.jpeg'):
         answers_ = ''
-        examanswers = Examanswers.objects.get(examanswersid=request.data['examanswersid'])
         fs = FileSystemStorage()
-        media = "/"+str(request.data['username'])+"/ans/"+str(examanswers.examid_ans.subid_exam.subid)+"/"+str(examanswers.examid_ans.examid)+"/"+str(examanswers.examanswersid)+"/answersheet_scan/"
+        media = "/"+str(user.fullname)+"/ans/temp/"
         media_path = fs.path('')+media
         original_path = media_path+"original/"
         if not os.path.exists(original_path):
             os.makedirs(original_path)
-        for filename in os.listdir(original_path):
-            if os.path.isfile(os.path.join(original_path, filename)):
-                os.remove(os.path.join(original_path, filename))
         fs.save(original_path+file.name, file)
 
         preprocess_path = media_path+"preprocess/"
         if not os.path.exists(preprocess_path):
             os.makedirs(preprocess_path)
-        for filename in os.listdir(preprocess_path):
-            if os.path.isfile(os.path.join(preprocess_path, filename)):
-                os.remove(os.path.join(preprocess_path, filename))
         pre = pre_process_ans(original_path, preprocess_path, file.name)
         if pre == True:
             data = process_ans(preprocess_path, "pre_"+file.name, 120)
@@ -472,22 +430,18 @@ def examanswersUploadPaperans(request):
                         else: not_n = False
                 if answers_ == '': return Response({"err" : "ไม่พบคำตอบข้อสอบ"}, status=status.HTTP_400_BAD_REQUEST)
                 if answers_[-1] == ',': answers_ = answers_[:-1]
-                val = {
-                "papeans_path": request.build_absolute_uri("/media"+media+"original/"+file.name),
-                "answers": answers_,
-                }
-                serializer = ExamanswersSerializer(instance=examanswers, data=val)
-                if serializer.is_valid():
-                    serializer.save()
                 return Response({
                     "msg" : "อัปโหลดไฟล์สำเร็จ", 
-                    "answers" : answers_
-                                }, status=status.HTTP_201_CREATED)
+                    "choiceanswers" : answers_
+                }, status=status.HTTP_201_CREATED)
             else:
                 err += "ที่ไฟล์: "+file.name
                 return Response({"err" : err}, status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response({"err" : pre}, status=status.HTTP_400_BAD_REQUEST)
+    else:
+        return Response({"err" : "สกุลไฟล์ไม่ถูกต้อง กรุณาเลือกไฟล์ .jpg"}, status=status.HTTP_400_BAD_REQUEST)
+        
 
 ##########################################################################################
 #- Examinformation
@@ -512,22 +466,43 @@ def examinformationCreate(request):
 
 @api_view(['POST'])
 def examinformationUpdate(request, pk):
+    user = User.objects.get(userid=request.data['userid'])
     exam = Exam.objects.get(examid=request.data['examid'])
     examinformation = Examinformation.objects.get(examinfoid=pk)
-    examinformation_update = json.loads(request.data['examinformation'])
     file = request.FILES['file'] if 'file' in request.FILES else False
     if file == False:
+        examinformation_update = json.loads(request.data['examinformation'])
         serializer = ExaminformationSerializer(instance=examinformation, data=examinformation_update)
         if serializer.is_valid():
             serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
     else:
         fs = FileSystemStorage()
-        default_path = "/"+str(request.data['username'])+"/ans/"+str(request.data['subid'])+"/"+str(request.data['examid'])+"/answersheet/"
+        default_path = "/"+str(user.fullname)+"/ans/"+str(request.data['subid'])+"/"+str(request.data['examid'])+"/answersheet/"
         ori_path = fs.path('')+default_path+"original/"
         pre_path = fs.path('')+default_path+"preprocess/"
-        pre_path_ = "/"+str(request.data['username'])+"/ans/"+str(request.data['subid'])+"/"+str(request.data['examid'])+"/answersheet/"+"preprocess/"
-        if file.name.endswith('.jpg'):
+        pre_path_ = "/"+str(user.fullname)+"/ans/"+str(request.data['subid'])+"/"+str(request.data['examid'])+"/answersheet/"+"preprocess/"
+        os.makedirs(ori_path, exist_ok=True)
+
+        examinfo = {
+            "examid" : request.data['examid'],
+            "stdemail" : None,
+            "stdid" : None,
+            "subjectidstd" : None,
+            "examseatnumber" : None,
+            "setexaminfo" : None,
+            "section" : None,
+            "score" : None,
+            "correct" : None,
+            "wrong" : None,
+            "unresponsive" : None,
+            "itemanalysis": None,
+            "anschoicestd" : None,
+            "activatekey_exan" : None,
+            "imgansstd_path" : None,
+            "errorstype" : None
+        }
+        if file.name.lower().endswith('.jpg') or file.name.lower().endswith('.jpeg'):
             old_img = examinformation.imgansstd_path.split("/")[-1]
             print(old_img)
             if os.path.exists(ori_path):
@@ -537,98 +512,62 @@ def examinformationUpdate(request, pk):
             fs.save(ori_path+file.name, file)
             img_link = request.build_absolute_uri("/media"+default_path+"original/"+file.name)
             pre = pre_process_ans(ori_path, pre_path, file.name)
+            examinfo['imgansstd_path'] = img_link
+
             if pre == True:
                 data = process_ans(pre_path, "pre_"+file.name, 120)
                 # chk_validate_ans return [check, std_id, sec, seat_id, sub_id, ex_id, answer]
                 valid = chk_validate_ans(data[1], data[2], data[3], data[4], data[5], data[6])
                 error_valid = ''
-                for i in range(0, len(valid[0])):
-                    if valid[0][i] != None:
-                        error_valid += valid[0][i] + "\n"
+                error_valid = '\n'.join([error for error in valid[0] if error is not None])
+                examinfo['stdid'] = valid[1]
+                examinfo['section'] = valid[2]
+                examinfo['examseatnumber'] = valid[3]
+                examinfo['subjectidstd'] = valid[4]
+                if valid[5] == '' : valid[5] = None
+                examinfo['setexaminfo'] = valid[5]
+                examinfo['anschoicestd'] = valid[6]
+
                 if error_valid == '':
-                    queryset = Examanswers.objects.get(examid_ans=request.data['examid'], setexamans=valid[5])
+                    csv_path = fs.path('')+"/"+str(user.fullname)+"/ans/"+str(request.data['subid'])+"/"+str(request.data['examid'])+"/student_list/student_list.csv"
+                    df = pd.read_csv(csv_path)
+                    df['รหัสนักศึกษา'] = df['รหัสนักศึกษา'].astype(str)
+                    index = df[df['รหัสนักศึกษา'] == valid[1]].index
+                    err_std = "ไม่พบรหัสนักศึกษาในรายชื่อ" if index.empty else ''
+                    examinfo['stdemail'] = df['email'][index[0]] if not index.empty else None
+
+                    queryset = Examanswers.objects.get(examid=request.data['examid'], examnoanswers=valid[5])
                     examanswers_serializer = ExamanswersSerializer(queryset, many=False)
-                    if examanswers_serializer.data['setexamans'] == '':
+                    
+                    if examanswers_serializer.data['examanswersid'] != '':
                         # chk_ans return [error, ans, chans, max_score, score, right, wrong, rightperchoice, notans, analys]
-                        ans = chk_ans(valid[6], exam.numexam, examanswers_serializer.data['answers'], examanswers_serializer.data['scoringcriteria'])
-                        examinfo = {
-                            "examid_info" : request.data['examid'],
-                            "stdid" : valid[1],
-                            "subidstd" : valid[4],
-                            "examseatnumber" : valid[3],
-                            "setexaminfo" : valid[5],
-                            "section" : valid[2],
-                            "score" : ans[4],
-                            "correct" : ans[5],
-                            "wrong" : ans[6],
-                            "unresponsive" : ans[8],
-                            "anschoicestd" : valid[6],
-                            "activatekey_exan" : None,
-                            "imgansstd_path" : img_link,
-                            "errorstype" : ans[0],
-                            "createtime_examinfo" : None,
-                        }
+                        ans = chk_ans(valid[6], exam.numberofexams, examanswers_serializer.data['choiceanswers'], examanswers_serializer.data['scoringcriteria'])
+                        examinfo['score'] = ans[4]
+                        examinfo['correct'] = ans[5]
+                        examinfo['wrong'] = ans[6]
+                        examinfo['unresponsive'] = ans[8]
+                        examinfo['itemanalysis'] = ans[9]
+                        if ans[0] == '' and err_std == '':
+                            examinfo['errorstype'] = None
+                        elif ans[0] != '' and err_std == '':
+                            examinfo['errorstype'] = ans[0]
+                        elif ans[0] == '' and err_std != '':
+                            examinfo['errorstype'] = err_std
+                        else :
+                            examinfo['errorstype'] = err_std+","+ans[0]
                     else :
-                        examinfo = {
-                            "examid_info" : request.data['examid'],
-                            "stdid" : valid[1],
-                            "subidstd" : valid[4],
-                            "examseatnumber" : valid[3],
-                            "setexaminfo" : valid[5],
-                            "section" : valid[2],
-                            "score" : None,
-                            "correct" : None,
-                            "wrong" : None,
-                            "unresponsive" : None,
-                            "anschoicestd" : valid[6],
-                            "activatekey_exan" : None,
-                            "imgansstd_path" : img_link,
-                            "errorstype" : "ไม่พบข้อมูลเฉลยข้อสอบ",
-                            "createtime_examinfo" : None,
-                        }
+                        err_set = "ไม่พบข้อมูลเฉลยข้อสอบ"
+                        examinfo['errorstype'] = err_set if err_std == '' else err_set+","+err_std
                 else:
-                    examinfo = {
-                            "examid_info" : request.data['examid'],
-                            "stdid" : valid[1],
-                            "subidstd" : valid[4],
-                            "examseatnumber" : valid[3],
-                            "setexaminfo" : valid[5],
-                            "section" : valid[2],
-                            "score" : None,
-                            "correct" : None,
-                            "wrong" : None,
-                            "unresponsive" : None,
-                            "anschoicestd" : valid[6],
-                            "activatekey_exan" : None,
-                            "imgansstd_path" : img_link,
-                            "errorstype" : error_valid,
-                            "createtime_examinfo" : None,
-                        }
+                    examinfo['errorstype'] = error_valid
             else:
-                examinfo = {
-                            "examid_info" : request.data['examid'],
-                            "stdid" : None,
-                            "subidstd" : None,
-                            "examseatnumber" : None,
-                            "setexaminfo" : None,
-                            "section" : None,
-                            "score" : None,
-                            "correct" : None,
-                            "wrong" : None,
-                            "unresponsive" : None,
-                            "anschoicestd" : None,
-                            "activatekey_exan" : None,
-                            "imgansstd_path" : img_link,
-                            "errorstype" : pre,
-                            "createtime_examinfo" : None,
-                        }
-            serializer = ExaminformationSerializer(instance=examinformation, data=examinfo)
-            if serializer.is_valid():
-                serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
+                examinfo['errorstype'] = pre
         else:
             return Response({"err" : "สกุลไฟล์ไม่ถูกต้อง กรุณาเลือกไฟล์ .jpg"}, status=status.HTTP_400_BAD_REQUEST)
-        
+    serializer = ExaminformationSerializer(instance=examinformation, data=examinfo)
+    if serializer.is_valid():
+        serializer.save()
+    return Response(serializer.data, status=status.HTTP_200_OK)    
 
 @api_view(['DELETE'])
 def examinformationDelete(request, pk):
@@ -637,198 +576,156 @@ def examinformationDelete(request, pk):
     return Response({"msg" : "ลบข้อมูลข้อสอบสำเร็จ"}, status=status.HTTP_200_OK)
 
 @api_view(['POST'])
-def examinformationUploadPaperans(request):
+def examinformationUploadPaper(request):
     res = []
+    user = User.objects.get(userid=request.data['userid'])
     exam = Exam.objects.get(examid=request.data['examid'])
     fs = FileSystemStorage()
-    default_path = "/"+str(request.data['username'])+"/ans/"+str(request.data['subid'])+"/"+str(request.data['examid'])+"/answersheet/"
+    default_path = "/"+str(user.fullname)+"/ans/"+str(request.data['subid'])+"/"+str(request.data['examid'])+"/answersheet/"
     ori_path = fs.path('')+default_path+"original/"
     pre_path = fs.path('')+default_path+"preprocess/"
-    pre_path_ = "/"+str(request.data['username'])+"/ans/"+str(request.data['subid'])+"/"+str(request.data['examid'])+"/answersheet/"+"preprocess/"
-    if not os.path.exists(ori_path):
-        os.makedirs(ori_path)
+    pre_path_ = "/"+str(user.fullname)+"/ans/"+str(request.data['subid'])+"/"+str(request.data['examid'])+"/answersheet/"+"preprocess/"
+    os.makedirs(ori_path, exist_ok=True)
+
     for file in request.FILES.getlist('file'):
-        if file.name.endswith('.jpg'):
+        examinfo = {
+            "examid" : request.data['examid']
+        }
+        if file.name.lower().endswith('.jpg') or file.name.lower().endswith('.jpeg'):
             fs.save(ori_path+file.name, file)
             img_link = request.build_absolute_uri("/media"+default_path+"original/"+file.name)
             pre = pre_process_ans(ori_path, pre_path, file.name)
+            examinfo['imgansstd_path'] = img_link
+
             if pre == True:
-                data = process_ans(pre_path, "pre_"+file.name, 120)
+                data = process_ans(pre_path, "pre_"+file.name, exam.numberofexams)
                 # chk_validate_ans return [check, std_id, sec, seat_id, sub_id, ex_id, answer]
                 valid = chk_validate_ans(data[1], data[2], data[3], data[4], data[5], data[6])
                 error_valid = ''
-                for i in range(0, len(valid[0])):
-                    if valid[0][i] != None:
-                        error_valid += valid[0][i] + "\n"
+                error_valid = '\n'.join([error for error in valid[0] if error is not None])
+                examinfo['stdid'] = valid[1]
+                examinfo['section'] = valid[2]
+                examinfo['examseatnumber'] = valid[3]
+                examinfo['subjectidstd'] = valid[4]
+                if valid[5] == '' : valid[5] = None
+                examinfo['setexaminfo'] = valid[5]
+                examinfo['anschoicestd'] = valid[6]
+
                 if error_valid == '':
-                    queryset = Examanswers.objects.get(examid_ans=request.data['examid'], setexamans=valid[5])
+                    csv_path = fs.path('')+"/"+str(user.fullname)+"/ans/"+str(request.data['subid'])+"/"+str(request.data['examid'])+"/student_list/student_list.csv"
+                    df = pd.read_csv(csv_path)
+                    df['รหัสนักศึกษา'] = df['รหัสนักศึกษา'].astype(str)
+                    index = df[df['รหัสนักศึกษา'] == valid[1]].index
+                    err_std = "ไม่พบรหัสนักศึกษาในรายชื่อ" if index.empty else ''
+                    examinfo['stdemail'] = df['email'][index[0]] if not index.empty else None
+
+                    queryset = Examanswers.objects.get(examid=request.data['examid'], examnoanswers=valid[5])
                     examanswers_serializer = ExamanswersSerializer(queryset, many=False)
-                    if examanswers_serializer.data['setexamans'] == '':
+                    
+                    if examanswers_serializer.data['examanswersid'] != '':
                         # chk_ans return [error, ans, chans, max_score, score, right, wrong, rightperchoice, notans, analys]
-                        ans = chk_ans(valid[6], exam.numexam, examanswers_serializer.data['answers'], examanswers_serializer.data['scoringcriteria'])
-                        examinfo = {
-                            "examid_info" : request.data['examid'],
-                            "stdid" : valid[1],
-                            "subidstd" : valid[4],
-                            "examseatnumber" : valid[3],
-                            "setexaminfo" : valid[5],
-                            "section" : valid[2],
-                            "score" : ans[4],
-                            "correct" : ans[5],
-                            "wrong" : ans[6],
-                            "unresponsive" : ans[8],
-                            "anschoicestd" : valid[6],
-                            "activatekey_exan" : None,
-                            "imgansstd_path" : img_link,
-                            "errorstype" : ans[0],
-                            "createtime_examinfo" : None,
-                        }
+                        ans = chk_ans(valid[6], exam.numberofexams, examanswers_serializer.data['choiceanswers'], examanswers_serializer.data['scoringcriteria'])
+                        examinfo['score'] = ans[4]
+                        examinfo['correct'] = ans[5]
+                        examinfo['wrong'] = ans[6]
+                        examinfo['unresponsive'] = ans[8]
+                        examinfo['itemanalysis'] = ans[9]
+                        if ans[0] == '' and err_std == '':
+                            examinfo['errorstype'] = None
+                        elif ans[0] != '' and err_std == '':
+                            examinfo['errorstype'] = ans[0]
+                        elif ans[0] == '' and err_std != '':
+                            examinfo['errorstype'] = err_std
+                        else :
+                            examinfo['errorstype'] = err_std+","+ans[0]
                     else :
-                        examinfo = {
-                            "examid_info" : request.data['examid'],
-                            "stdid" : valid[1],
-                            "subidstd" : valid[4],
-                            "examseatnumber" : valid[3],
-                            "setexaminfo" : valid[5],
-                            "section" : valid[2],
-                            "score" : None,
-                            "correct" : None,
-                            "wrong" : None,
-                            "unresponsive" : None,
-                            "anschoicestd" : valid[6],
-                            "activatekey_exan" : None,
-                            "imgansstd_path" : img_link,
-                            "errorstype" : "ไม่พบข้อมูลเฉลยข้อสอบ",
-                            "createtime_examinfo" : None,
-                        }
+                        err_set = "ไม่พบข้อมูลเฉลยข้อสอบ"
+                        examinfo['errorstype'] = err_set if err_std == '' else err_set+","+err_std
                 else:
-                    examinfo = {
-                            "examid_info" : request.data['examid'],
-                            "stdid" : valid[1],
-                            "subidstd" : valid[4],
-                            "examseatnumber" : valid[3],
-                            "setexaminfo" : valid[5],
-                            "section" : valid[2],
-                            "score" : None,
-                            "correct" : None,
-                            "wrong" : None,
-                            "unresponsive" : None,
-                            "anschoicestd" : valid[6],
-                            "activatekey_exan" : None,
-                            "imgansstd_path" : img_link,
-                            "errorstype" : error_valid,
-                            "createtime_examinfo" : None,
-                        }
+                    examinfo['errorstype'] = error_valid
             else:
-                examinfo = {
-                            "examid_info" : request.data['examid'],
-                            "stdid" : None,
-                            "subidstd" : None,
-                            "examseatnumber" : None,
-                            "setexaminfo" : None,
-                            "section" : None,
-                            "score" : None,
-                            "correct" : None,
-                            "wrong" : None,
-                            "unresponsive" : None,
-                            "anschoicestd" : None,
-                            "activatekey_exan" : None,
-                            "imgansstd_path" : img_link,
-                            "errorstype" : pre,
-                            "createtime_examinfo" : None,
-                        }
+                examinfo['errorstype'] = pre
         else:
-            examinfo = {
-                            "examid_info" : request.data['examid'],
-                            "stdid" : None,
-                            "subidstd" : None,
-                            "examseatnumber" : None,
-                            "setexaminfo" : None,
-                            "section" : None,
-                            "score" : None,
-                            "correct" : None,
-                            "wrong" : None,
-                            "unresponsive" : None,
-                            "anschoicestd" : None,
-                            "activatekey_exan" : None,
-                            "imgansstd_path" : None,
-                            "errorstype" : "สกุลไฟล์ไม่ถูกต้อง กรุณาเลือกไฟล์ .jpg",
-                            "createtime_examinfo" : None,
-                        }
+            examinfo['errorstype'] = "สกุลไฟล์ไม่ถูกต้อง กรุณาเลือกไฟล์ .jpg"
+
+        examinfo['createtimeexaminfo'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         examinfo_serializer = ExaminformationSerializer(data=examinfo)
+
         if examinfo_serializer.is_valid():
             examinfo_serializer.save()
+        else:
+            return Response({"err" : examinfo_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         res.append(examinfo_serializer.data)
     return Response(res, status=status.HTTP_201_CREATED)
 
 ##########################################################################################
-#- Lesson
+#- chapter
 @api_view(['GET'])
-def lessonList(request):
-    queryset = Lesson.objects.all().order_by('lessonid')
-    serializer = LessonSerializer(queryset, many=True)
+def chapterList(request):
+    queryset = Chapter.objects.all().order_by('chapterid')
+    serializer = ChapterSerializer(queryset, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
-def lessonDetail(request, pk):
-    queryset = Lesson.objects.get(lessonid=pk)
-    serializer = LessonSerializer(queryset, many=False)
+def chapterDetail(request, pk):
+    queryset = Chapter.objects.get(chapterid=pk)
+    serializer = ChapterSerializer(queryset, many=False)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['POST'])
-def lessonCreate(request):
-    serializer = LessonSerializer(data=request.data)
+def chapterCreate(request):
+    serializer = ChapterSerializer(data=request.data)
     if serializer.is_valid():
         serializer.save()
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 @api_view(['POST'])
-def lessonUpdate(request, pk):
-    lesson = Lesson.objects.get(lessonid=pk)
-    serializer = LessonSerializer(instance=lesson, data=request.data)
+def chapterUpdate(request, pk):
+    chapter = Chapter.objects.get(chapterid=pk)
+    serializer = ChapterSerializer(instance=chapter, data=request.data)
     if serializer.is_valid():
         serializer.save()
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['DELETE'])
-def lessonDelete(request, pk):
-    lesson = Lesson.objects.get(lessonid=pk)
-    lesson.delete()
+def chapterDelete(request, pk):
+    chapter = Chapter.objects.get(chapterid=pk)
+    chapter.delete()
     return Response({"msg" : "ลบบทเรียนสำเร็จ"}, status=status.HTTP_200_OK)
 
 ##########################################################################################
-#- Lessonanswer
+#- chapteranswer
 @api_view(['GET'])
-def lessonanswerList(request):
-    queryset = Lessonanswer.objects.all().order_by('lessonandanswer')
-    serializer = LessonanswerSerializer(queryset, many=True)
+def chapteranswerList(request):
+    queryset = Chapteranswer.objects.all().order_by('chapterandanswerid')
+    serializer = ChapteranswerSerializer(queryset, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
-def lessonanswerDetail(request, pk):
-    queryset = Lessonanswer.objects.get(lessonandanswer=pk)
-    serializer = LessonanswerSerializer(queryset, many=False)
+def chapteranswerDetail(request, pk):
+    queryset = Chapteranswer.objects.get(chapterandanswerid=pk)
+    serializer = ChapteranswerSerializer(queryset, many=False)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['POST'])
-def lessonanswerCreate(request):
-    serializer = LessonanswerSerializer(data=request.data)
+def chapteranswerCreate(request):
+    serializer = ChapteranswerSerializer(data=request.data)
     if serializer.is_valid():
         serializer.save()
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 @api_view(['POST'])
-def lessonanswerUpdate(request, pk):
-    lessonanswer = Lessonanswer.objects.get(lessonandanswer=pk)
-    serializer = LessonanswerSerializer(instance=lessonanswer, data=request.data)
+def chapteranswerUpdate(request, pk):
+    chapteranswer = Chapteranswer.objects.get(chapterandanswerid=pk)
+    serializer = ChapteranswerSerializer(instance=chapteranswer, data=request.data)
     if serializer.is_valid():
         serializer.save()
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['DELETE'])
-def lessonanswerDelete(request, pk):
-    lessonanswer = Lessonanswer.objects.get(lessonandanswer=pk)
-    lessonanswer.delete()
+def chapteranswerDelete(request, pk):
+    chapteranswer = Chapteranswer.objects.get(chapterandanswerid=pk)
+    chapteranswer.delete()
     return Response({"msg" : "ลบบทเรียนสำเร็จ"}, status=status.HTTP_200_OK)
 
 ##########################################################################################
@@ -847,41 +744,43 @@ def quesheetDetail(request, pk):
 
 @api_view(['POST'])
 def quesheetCreate(request):
+    user = User.objects.get(userid=request.data['userid'])
     data = request.data
-    data['quesheet'] = json.loads(data['quesheet'])
-    data['queheaddetails'] = json.loads(data['queheaddetails'])
-    data['quetopicdetails'] = json.loads(data['quetopicdetails'])
-    head_1 = data['quesheet']['quesheettopicname']
-    detail_1 = data['quesheet']['detailslineone']
-    detail_2 = data['quesheet']['detailslinetwo']
-    part_1 = [data['queheaddetails']['quehead1'].split(','), 
-              data['queheaddetails']['quehead2'].split(','), 
-              data['queheaddetails']['quehead3'].split(','), 
-              data['queheaddetails']['quehead4'].split(','), 
-              data['queheaddetails']['quehead5'].split(',')]
-    part_2 = chk_validate_qtn(data['quetopicdetails']['quetopicdetails'], data['quetopicdetails']['quetopicformat'])
+    quesheet_data = json.loads(data['quesheet'])
+    queheaddetails_data = json.loads(data['queheaddetails'])
+    quetopicdetails_data = json.loads(data['quetopicdetails'])
+    head_1 = quesheet_data['quesheettopicname']
+    detail_1 = quesheet_data['detailslineone']
+    detail_2 = quesheet_data['detailslinetwo']
+    part_1 = [queheaddetails_data['quehead1'].split(','), 
+              queheaddetails_data['quehead2'].split(','), 
+              queheaddetails_data['quehead3'].split(','), 
+              queheaddetails_data['quehead4'].split(','), 
+              queheaddetails_data['quehead5'].split(',')]
+    part_2 = chk_validate_qtn(quetopicdetails_data['quetopicdetails'], quetopicdetails_data['quetopicformat'])
     if part_2[0] != False:
-        quesheet_serializer = QuesheetSerializer(data=data['quesheet'])
+        quesheet_data['createtimequesheet'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        quesheet_serializer = QuesheetSerializer(data=quesheet_data)
         if quesheet_serializer.is_valid():
             quesheet_serializer.save()
         else:
             return Response({"err" : quesheet_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         
-        data['queheaddetails']['quesheetid_head'] = quesheet_serializer.data['quesheetid']
-        queheaddetails_serializer = QueheaddetailsSerializer(data=data['queheaddetails'])
+        queheaddetails_data['quesheetid'] = quesheet_serializer.data['quesheetid']
+        queheaddetails_serializer = QueheaddetailsSerializer(data=queheaddetails_data)
         if queheaddetails_serializer.is_valid():
             queheaddetails_serializer.save()
         else:
             return Response({"err" : queheaddetails_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         
-        data['quetopicdetails']['quesheetid_topic'] = quesheet_serializer.data['quesheetid']
-        quetopicdetails_serializer = QuetopicdetailsSerializer(data=data['quetopicdetails'])
+        quetopicdetails_data['quesheetid'] = quesheet_serializer.data['quesheetid']
+        quetopicdetails_serializer = QuetopicdetailsSerializer(data=quetopicdetails_data)
         if quetopicdetails_serializer.is_valid():
             quetopicdetails_serializer.save()
         else:
             return Response({"err" : quetopicdetails_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         fs = FileSystemStorage()
-        media = "/"+str(request.data['username'])+"/qtn/"+str(quesheet_serializer.data['quesheetid'])+"/original_sheet/"
+        media = "/"+str(user.fullname)+"/qtn/"+str(quesheet_serializer.data['quesheetid'])+"/original_sheet/"
         media_path = fs.path('')+media
         if not os.path.exists(media_path):
             os.makedirs(media_path)
@@ -910,56 +809,67 @@ def quesheetCreate(request):
 
 @api_view(['POST'])
 def quesheetUpdate(request, pk):
-    data = request.data
-    data['quesheet'] = json.loads(data['quesheet'])
-    data['queheaddetails'] = json.loads(data['queheaddetails'])
-    data['quetopicdetails'] = json.loads(data['quetopicdetails'])
-    head_1 = data['quesheet']['quesheettopicname']
-    detail_1 = data['quesheet']['detailslineone']
-    detail_2 = data['quesheet']['detailslinetwo']
-    part_1 = [data['queheaddetails']['quehead1'].split(','), 
-              data['queheaddetails']['quehead2'].split(','), 
-              data['queheaddetails']['quehead3'].split(','), 
-              data['queheaddetails']['quehead4'].split(','), 
-              data['queheaddetails']['quehead5'].split(',')]
-    part_2 = chk_validate_qtn(data['quetopicdetails']['quetopicdetails'], data['quetopicdetails']['quetopicformat'])
-    quesheet = Quesheet.objects.get(quesheetid=pk)
-    quesheet_serializer = QuesheetSerializer(instance=quesheet, data=request.data['quesheet'])
-    if quesheet_serializer.is_valid():
-        quesheet_serializer.save()
-        queheaddetails = Queheaddetails.objects.get(quesheetid_head=pk)
-        queheaddetails_serializer = QueheaddetailsSerializer(instance=queheaddetails, data=request.data['queheaddetails'])
-        if queheaddetails_serializer.is_valid():
-            queheaddetails_serializer.save()
-            quetopicdetails = Quetopicdetails.objects.get(quesheetid_topic=pk)
-            quetopicdetails_serializer = QuetopicdetailsSerializer(instance=quetopicdetails, data=request.data['quetopicdetails'])
-            if quetopicdetails_serializer.is_valid():
-                quetopicdetails_serializer.save()
-                fs = FileSystemStorage()
-                media = "/"+str(request.data['username'])+"/qtn/"+str(quesheet_serializer.data['quesheetid'])+"/original_sheet/"
-                media_path = fs.path('')+media
-                logo_path = media_path+"logo.jpg"
-                qrcode_path = media_path+"qrcode.jpg"
-                if not os.path.exists(logo_path):
-                    chk = create_questionnaire_sheet(media_path, head_1, detail_1, detail_2, part_1, part_2, qrcode=qrcode_path)
+    user = User.objects.get(userid=request.data['userid'])
+    quesheet_userid = Quesheet.objects.filter(userid=request.data['userid'])
+    if quesheet_userid.count() < user.typesid.limitque:
+        data = request.data
+        quesheet_data = json.loads(data['quesheet'])
+        queheaddetails_data = json.loads(data['queheaddetails'])
+        quetopicdetails_data = json.loads(data['quetopicdetails'])
+        head_1 = quesheet_data['quesheettopicname']
+        detail_1 = quesheet_data['detailslineone']
+        detail_2 = quesheet_data['detailslinetwo']
+        part_1 = [queheaddetails_data['quehead1'].split(','), 
+                queheaddetails_data['quehead2'].split(','), 
+                queheaddetails_data['quehead3'].split(','), 
+                queheaddetails_data['quehead4'].split(','), 
+                queheaddetails_data['quehead5'].split(',')]
+        part_2 = chk_validate_qtn(quetopicdetails_data['quetopicdetails'], quetopicdetails_data['quetopicformat'])
+        quesheet = Quesheet.objects.get(quesheetid=pk)
+        quesheet_serializer = QuesheetSerializer(instance=quesheet, data=quesheet_data)
+        if quesheet_serializer.is_valid():
+            quesheet_serializer.save()
+            queheaddetails = Queheaddetails.objects.get(quesheetid=pk)
+            queheaddetails_serializer = QueheaddetailsSerializer(instance=queheaddetails, data=queheaddetails_data)
+            if queheaddetails_serializer.is_valid():
+                queheaddetails_serializer.save()
+                quetopicdetails = Quetopicdetails.objects.get(quesheetid=pk)
+                quetopicdetails_serializer = QuetopicdetailsSerializer(instance=quetopicdetails, data=quetopicdetails_data)
+                if quetopicdetails_serializer.is_valid():
+                    quetopicdetails_serializer.save()
+                    fs = FileSystemStorage()
+                    media = "/"+str(user.fullname)+"/qtn/"+str(quesheet_serializer.data['quesheetid'])+"/original_sheet/"
+                    media_path = fs.path('')+media
+                    logo_path = media_path+"logo.jpg"
+                    qrcode_path = media_path+"qrcode.jpg"
+                    if not os.path.exists(logo_path):
+                        chk = create_questionnaire_sheet(media_path, head_1, detail_1, detail_2, part_1, part_2, qrcode=qrcode_path)
+                    else:
+                        chk = create_questionnaire_sheet(media_path, head_1, detail_1, detail_2, part_1, part_2, qrcode=qrcode_path, logo=logo_path)
+                    if chk == True:
+                        link_sheet = request.build_absolute_uri("/media"+media+"questionnaire_sheet.jpg")
+                        val = {"imgquesheet_path": link_sheet}
+                        quesheet = Quesheet.objects.get(quesheetid=quesheet_serializer.data['quesheetid'])
+                        quesheet_serializer = QuesheetSerializer(instance=quesheet, data=val)
+                        if quesheet_serializer.is_valid():
+                            quesheet_serializer.save()
+                        return Response({"msg" : "สร้างแบบสอบถามสำเร็จ", "imgquesheet_path" : quesheet_serializer.data['imgquesheet_path']}, status=status.HTTP_201_CREATED)
+                    else:
+                        return Response({"err" : chk}, status=status.HTTP_400_BAD_REQUEST)
                 else:
-                    chk = create_questionnaire_sheet(media_path, head_1, detail_1, detail_2, part_1, part_2, qrcode=qrcode_path, logo=logo_path)
-                if chk == True:
-                    return Response({"msg" : "สร้างแบบสอบถามสำเร็จ", "imgquesheet_path" : quesheet_serializer.data['imgquesheet_path']}, status=status.HTTP_201_CREATED)
-                else:
-                    return Response({"err" : chk}, status=status.HTTP_400_BAD_REQUEST)
+                    queheaddetails_serializer = QueheaddetailsSerializer(instance=queheaddetails_serializer.data, data=queheaddetails)
+                    if queheaddetails_serializer.is_valid():
+                        queheaddetails_serializer.save()
+                    return Response({"err" : queheaddetails_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
             else:
-                queheaddetails_serializer = QueheaddetailsSerializer(instance=queheaddetails_serializer.data, data=queheaddetails)
-                if queheaddetails_serializer.is_valid():
-                    queheaddetails_serializer.save()
-                return Response({"err" : queheaddetails_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-        else:
-            quesheet_serializer = QuesheetSerializer(instance=quesheet_serializer.data, data=quesheet)
-            if quesheet_serializer.is_valid():
-                quesheet_serializer.save()
-            return Response({"err" : quesheet_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+                quesheet_serializer = QuesheetSerializer(instance=quesheet_serializer.data, data=quesheet)
+                if quesheet_serializer.is_valid():
+                    quesheet_serializer.save()
+                return Response({"err" : quesheet_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-    return Response(quesheet_serializer.data, status=status.HTTP_200_OK)
+        return Response(quesheet_serializer.data, status=status.HTTP_200_OK)
+    else:
+        return Response({"err" : "จำนวนแบบสอบเกินกำหนดที่สามารถสร้างได้"}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['DELETE'])
 def quesheetDelete(request, pk):
@@ -975,31 +885,6 @@ def quesheetDelete(request, pk):
     if os.path.exists(media_path):
         shutil.rmtree(media_path)
     return Response({"msg" : "ลบแบบสอบถามสำเร็จ"}, status=status.HTTP_200_OK)
-
-@api_view(['POST'])
-def quesheetUploadPapers(request):
-    res = []
-    file = request.FILES['file']
-    if file.name.endswith('.jpg'):
-        quesheet = Quesheet.objects.get(quesheetid=request.data['quesheetid'])
-        fs = FileSystemStorage()
-        media = "/"+str(request.data['username'])+"/qtn/"+str(request.data['quesheetid'])+"/original_sheet/"
-        media_path = fs.path('')+media
-        if not os.path.exists(media_path):
-            os.makedirs(media_path)
-        for filename in os.listdir(media_path):
-            if os.path.isfile(os.path.join(media_path, filename)):
-                os.remove(os.path.join(media_path, filename))
-        fs.save(media_path+file.name, file)
-        imgquesheet_path = request.build_absolute_uri("/media"+media+file.name)
-        val = {"imgquesheet_path": imgquesheet_path}
-        serializer = QuesheetSerializer(instance=quesheet, data=val)
-        if serializer.is_valid():
-            serializer.save()
-        return Response({"msg" : "อัปโหลดไฟล์แบบสอบถามสำเร็จ", "imgquesheet_path" : imgquesheet_path}, status=status.HTTP_201_CREATED)
-        
-    else:
-        return Response({"err" : "สกุลไฟล์ไม่ถูกต้อง กรุณาเลือกไฟล์ .jpg"}, status=status.HTTP_400_BAD_REQUEST)
 
 ##########################################################################################
 #- Queheaddetails
@@ -1106,6 +991,61 @@ def queinformationDelete(request, pk):
     queinformation.delete()
     return Response({"msg" : "ลบข้อมูลแบบสอบถามสำเร็จ"}, status=status.HTTP_200_OK)
 
+@api_view(['POST'])
+def queinformationUploadPaper(request):
+    res = []
+    user = User.objects.get(userid=request.data['userid'])
+    quesheet = Quesheet.objects.get(quesheetid=request.data['quesheetid'])
+    queheaddetails = Queheaddetails.objects.get(quesheetid=request.data['quesheetid'])
+    quetopicdetails = Quetopicdetails.objects.get(quesheetid=request.data['quesheetid'])
+    fs = FileSystemStorage()
+    default_path = "/"+str(user.fullname)+"/qtn/"+str(request.data['quesheetid'])+"/"
+    ori_path = fs.path('')+default_path+"questionnaire/original/"
+    pre_path = fs.path('')+default_path+"questionnaire/preprocess/"
+    os.makedirs(ori_path, exist_ok=True)
+    part_1_path = fs.path('')+default_path+"result/part1/"
+    os.makedirs(part_1_path, exist_ok=True)
+    part_3_path = fs.path('')+default_path+"result/part3/"
+    os.makedirs(part_3_path, exist_ok=True)
+    for file in request.FILES.getlist('file'):
+        if file.name.lower().endswith('.jpg') or file.name.lower().endswith('.jpeg'):
+            fs.save(ori_path+file.name, file)
+            data = read_qrcode(ori_path+file.name, request.data['src'])
+            if data != False:
+                pre = pre_process_qtn(ori_path, pre_path, file.name)
+                if pre == True:
+                    format_part_1 = []
+                    part_1 = [queheaddetails.quehead1, queheaddetails.quehead2, queheaddetails.quehead3, queheaddetails.quehead4, queheaddetails.quehead5]
+                    for index, i in enumerate(part_1):
+                        head = i.split(',')
+                        format_part_1.append([])
+                        for index_, ii in enumerate(head):
+                            format_part_1[-1].append(index_+1)
+
+                    format_part_2 = []
+                    part_2 = chk_validate_qtn(quetopicdetails.quetopicdetails, quetopicdetails.quetopicformat)
+                    print("part_2 :",part_2)
+                    for index, i in enumerate(part_2):
+                        if i == "nohead":
+                            format_part_2.append([])
+                        else:
+                            for iindex, ii in enumerate(i):
+                                format_part_2.append([])
+                                    
+                    print("format_part_1 :",format_part_1)
+                    print("format_part_2 :",format_part_2)
+                    proc = process_qtn(pre_path, part_1_path, part_3_path,"pre_"+file.name, [], format_part_1, format_part_2)
+                    print("proc 1 :",proc[1])
+                    print("proc 2 :",proc[2])
+                    pass
+                else:
+                    res.append({"err" : pre})
+            else:
+                res.append({"err" : "ไม่พบ QR Code"})
+        else:
+            res.append({"err" : "สกุลไฟล์ไม่ถูกต้อง กรุณาเลือกไฟล์ .jpg"})
+    return Response(res, status=status.HTTP_201_CREATED)
+
 ##########################################################################################
 #- Request
 @api_view(['GET'])
@@ -1122,6 +1062,15 @@ def requestDetail(request, pk):
 
 @api_view(['POST'])
 def requestCreate(request):
+    user = User.objects.get(userid=request.data['userid'])
+    file = request.FILES['file']
+    fs = FileSystemStorage()
+    media_path = fs.path('')+"/"+str(user.fullname)+"/request/"
+    os.makedirs(media_path, exist_ok=True)
+    fs.save(media_path+"request.jpg", file)
+    data = request.data
+    data['imgrequest_path'] = request.build_absolute_uri("/media/"+str(user.fullname)+"/request/request.jpg")
+    data['status_request'] = "Waiting for confirmation"
     serializer = RequestSerializer(data=request.data)
     if serializer.is_valid():
         serializer.save()
@@ -1142,107 +1091,119 @@ def requestDelete(request, pk):
     return Response({"msg" : "ลบคำร้องขอสำเร็จ"}, status=status.HTTP_200_OK)
 
 ##########################################################################################
-#- Role
+#- type
 @api_view(['GET'])
-def roleList(request):
-    queryset = Role.objects.all().order_by('typesid')
-    serializer = RoleSerializer(queryset, many=True)
+def typeList(request):
+    queryset = Type.objects.all().order_by('typesid')
+    serializer = TypeSerializer(queryset, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
-def roleDetail(request, pk):
-    queryset = Role.objects.get(typesid=pk)
-    serializer = RoleSerializer(queryset, many=False)
+def typeDetail(request, pk):
+    queryset = Type.objects.get(typesid=pk)
+    serializer = TypeSerializer(queryset, many=False)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['POST'])
-def roleCreate(request):
-    serializer = RoleSerializer(data=request.data)
+def typeCreate(request):
+    serializer = TypeSerializer(data=request.data)
     if serializer.is_valid():
         serializer.save()
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 @api_view(['POST'])
-def roleUpdate(request, pk):
-    role = Role.objects.get(typesid=pk)
-    serializer = RoleSerializer(instance=role, data=request.data)
+def typeUpdate(request, pk):
+    type = Type.objects.get(typesid=pk)
+    serializer = TypeSerializer(instance=type, data=request.data)
     if serializer.is_valid():
         serializer.save()
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['DELETE'])
-def roleDelete(request, pk):
-    role = Role.objects.get(typesid=pk)
-    role.delete()
+def typeDelete(request, pk):
+    type = Type.objects.get(typesid=pk)
+    type.delete()
     return Response({"msg" : "ลบประเภทผู้ใช้งานสำเร็จ"}, status=status.HTTP_200_OK)
 
 ##########################################################################################
-#- Sublesson
+#- subchapter
 @api_view(['GET'])
-def sublessonList(request):
-    queryset = Sublesson.objects.all().order_by('sublessonid')
-    serializer = SublessonSerializer(queryset, many=True)
+def subchapterList(request):
+    queryset = Subchapter.objects.all().order_by('subchapterid')
+    serializer = SubchapterSerializer(queryset, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
-def sublessonDetail(request, pk):
-    queryset = Sublesson.objects.get(sublessonid=pk)
-    serializer = SublessonSerializer(queryset, many=False)
+def subchapterDetail(request, pk):
+    queryset = Subchapter.objects.get(subchapterid=pk)
+    serializer = SubchapterSerializer(queryset, many=False)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['POST'])
-def sublessonCreate(request):
-    serializer = SublessonSerializer(data=request.data)
+def subchapterCreate(request):
+    serializer = SubchapterSerializer(data=request.data)
     if serializer.is_valid():
         serializer.save()
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 @api_view(['POST'])
-def sublessonUpdate(request, pk):
-    sublesson = Sublesson.objects.get(sublessonid=pk)
-    serializer = SublessonSerializer(instance=sublesson, data=request.data)
+def subchapterUpdate(request, pk):
+    subchapter = Subchapter.objects.get(subchapterid=pk)
+    serializer = SubchapterSerializer(instance=subchapter, data=request.data)
     if serializer.is_valid():
         serializer.save()
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['DELETE'])
-def sublessonDelete(request, pk):
-    sublesson = Sublesson.objects.get(sublessonid=pk)
-    sublesson.delete()
+def subchapterDelete(request, pk):
+    subchapter = Subchapter.objects.get(subchapterid=pk)
+    subchapter.delete()
     return Response({"msg" : "ลบบทย่อยสำเร็จ"}, status=status.HTTP_200_OK)
 
 ##########################################################################################
 #- Subject
 @api_view(['GET'])
 def subjectList(request):
-    queryset = Subject.objects.all().order_by('subjectid')
+    queryset = Subject.objects.all().order_by('subid')
     serializer = SubjectSerializer(queryset, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 def subjectDetail(request, pk):
-    queryset = Subject.objects.get(subjectid=pk)
+    queryset = Subject.objects.get(subid=pk)
     serializer = SubjectSerializer(queryset, many=False)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['POST'])
 def subjectCreate(request):
-    serializer = SubjectSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-    return Response(serializer.data, status=status.HTTP_201_CREATED)
+    user = User.objects.get(userid=request.data['userid'])
+    subject = Subject.objects.filter(subcode=request.data['userid'])
+    if subject.count() < int(user.typesid.limitsubject):
+        data = request.data
+        data['deletetimesubject'] = None
+        data['createtimesubject'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        serializer = SubjectSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+        else:
+            return Response({"err" : serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    else:
+        return Response({"err" : "จำนวนวิชาเกินที่กำหนด"}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])
 def subjectUpdate(request, pk):
-    subject = Subject.objects.get(subjectid=pk)
+    subject = Subject.objects.get(subid=pk)
     serializer = SubjectSerializer(instance=subject, data=request.data)
     if serializer.is_valid():
         serializer.save()
+    else:
+        return Response({"err" : serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['DELETE'])
 def subjectDelete(request, pk):
-    subject = Subject.objects.get(subjectid=pk)
+    subject = Subject.objects.get(subid=pk)
     subject.delete()
     return Response({"msg" : "ลบวิชาสำเร็จ"}, status=status.HTTP_200_OK)
 
