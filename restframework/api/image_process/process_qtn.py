@@ -73,13 +73,14 @@ def process_qtn(srcpath, dstpathp1, dstpathp3, file, p1, indpart1, indpart2):
         thresh=cv2.morphologyEx(masked_img3, cv2.MORPH_CLOSE, ke ,iterations=1)
         cv2.imwrite(srcpath+"path3.2"+file,thresh)
         hist_mask = cv2.calcHist([thresh],[0],mask,[2],[0,256])
-        if hist_mask[0] > 1000:
-            cropimg3=img[a_sorted3[1][1]+10 :height-15 , 15 :width-15 ]
+        print(hist_mask[0])
+        if hist_mask[0] > 3000:
+            cropimg3=img[a_sorted3[1][1]+10 :height-15 , 15 :width-100 ]
             cv2.imwrite(dstpathp3+"p3_"+file,cropimg3)
 
         height1, width1, channels = cropimg1.shape
         gray = cv2.cvtColor(cropimg1, cv2.COLOR_BGR2GRAY)
-        ret, thresh = cv2.threshold(gray, 160, 255, cv2.THRESH_BINARY)
+        ret, thresh = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY)
         linek = np.ones((5,5),np.uint8)
         thresh=cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, linek ,iterations=1)
         cv2.rectangle(thresh,(2,2),(width1-3,height1-3),(255,255,255),5)
@@ -106,6 +107,7 @@ def process_qtn(srcpath, dstpathp1, dstpathp3, file, p1, indpart1, indpart2):
                 mask[0+(l*r):l+(l*r), s+(b*q):s+(b*q)+x] = 255
                 masked_img = cv2.bitwise_and(thresh,thresh,mask = mask)
                 hist_mask = cv2.calcHist([thresh],[0],mask,[2],[0,256])
+                print(str(r+1)+str(q+1),hist_mask[0])
                 if hist_mask[0] > 40 :
                     if n == 0 :
                         part1.append([])
@@ -116,8 +118,7 @@ def process_qtn(srcpath, dstpathp1, dstpathp3, file, p1, indpart1, indpart2):
                     if any("p1"+str(r+1)+str(q+1) in s for s in p1):
                         other = cropimg1[0+(l*r)-15 :l+(l*r) ,s+(b*q):s+(b*q)+b+20 ]
                         path = dstpathp1+'หัวข้อที่ '+str(r+1)+"/"+'ตัวเลือกที่ '+str(q+1)+"/"
-                        if not os.path.exists(path):
-                            os.makedirs(path)
+                        os.makedirs(path, exist_ok=True)
                         cv2.imwrite(path+"p1"+str(r+1)+str(q+1)+"_"+file, other)
 
              if count == 0 :

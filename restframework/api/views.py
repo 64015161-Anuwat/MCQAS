@@ -1,11 +1,7 @@
-from math import e
 import os
-import shutil
 import json
-import datetime
+from datetime import datetime, timedelta
 import pandas as pd
-from h11 import Data
-from pandas import read_csv
 from rest_framework import status, viewsets, permissions, routers
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -14,7 +10,6 @@ from .models import *
 from .serializers import *
 
 from django.core.files.storage import FileSystemStorage
-from django.utils.crypto import get_random_string
 
 from .utils.hash_password import *
 
@@ -28,139 +23,177 @@ from .image_process.create_questionnaire_sheet import *
 from .image_process.pre_process_qtn import *
 from .image_process.process_qtn import *
 from .image_process.chk_validate_qtn import *
+from datetime import timedelta
 
 @api_view(['GET'])
 def overview(request):
     api_urls = {
+        'update': {
+            'PUT-Update': '/update/',
+        },
         'user': {
-            'List': '/user/',
-            'Create': '/user/create/',
-            'Detail': '/user/detail/<str:pk>/',
-            'Update': '/user/update/<str:pk>/',
-            'Delete': '/user/delete/<str:pk>/',
-            'DuplicateEmail': '/user/duplicate/email/',
-            'DuplicateGoogleid': '/user/duplicate/googleid/',
-            'Login': '/user/login/',
-            'LoginGoogle': '/user/login/google/',
+            'GET    - List': '/user/',
+            'POST   - Create': '/user/create/',
+            'GET    - Detail': '/user/detail/<str:pk>/',
+            'PUT    - Update': '/user/update/<str:pk>/',
+            'DELETE - Delete': '/user/delete/<str:pk>/',
+            'GET    - DuplicateEmail': '/user/duplicate/email/<str:email>/',
+            'GET    - DuplicateGoogleid': '/user/duplicate/googleid/<str:googleid>/',
+            'POST   - Login': '/user/login/',
+            'POST   - LoginGoogle': '/user/login/google/',
         },
         'exam': {
-            'List': '/exam/',
-            'Create': '/exam/create/',
-            'Detail': '/exam/detail/<str:pk>/',
-            'DetailBySubid': '/exam/detail/subject/<str:pk>/',
-            'Update': '/exam/update/<str:pk>/',
-            'Delete': '/exam/delete/<str:pk>/',
-            'UploadCSV': '/exam/upload/csv/',
-            'UploadLogo': '/exam/upload/logo/',
+            'GET    - List': '/exam/',
+            'POST   - Create': '/exam/create/',
+            'GET    - Detail': '/exam/detail/<str:pk>/',
+            'GET    - DetailBySubid': '/exam/detail/subject/<str:pk>/',
+            'PUT    - Update': '/exam/update/<str:pk>/',
+            'DELETE - Delete': '/exam/delete/<str:pk>/',
+            'POST   - UploadCSV': '/exam/upload/csv/',
+            'POST   - UploadLogo': '/exam/upload/logo/',
         },
         'examanswers': {
-            'List': '/examanswers/',
-            'Create': '/examanswers/create/',
-            'Detail': '/examanswers/detail/<str:pk>/',
-            'DetailByExamid': '/examanswers/detail/examid/<str:pk>/',
-            'Update': '/examanswers/update/<str:pk>/',
-            'Delete': '/examanswers/delete/<str:pk>/',
-            'UploadPaper': '/examanswers/upload/paper/',
+            'GET    - List': '/examanswers/',
+            'POST   - Create': '/examanswers/create/',
+            'GET    - Detail': '/examanswers/detail/<str:pk>/',
+            'GET    - DetailByExamid': '/examanswers/detail/examid/<str:pk>/',
+            'PUT    - Update': '/examanswers/update/<str:pk>/',
+            'DELETE - Delete': '/examanswers/delete/<str:pk>/',
+            'POST   - UploadPaper': '/examanswers/upload/paper/',
         },
         'examinformation': {
-            'List': '/examinformation/',
-            'Create': '/examinformation/create/',
-            'Detail': '/examinformation/detail/<str:pk>/',
-            'DetailByExamid': '/examinformation/detail/exam/<str:pk>/',
-            'Update': '/examinformation/update/<str:pk>/',
-            'Delete': '/examinformation/delete/<str:pk>/',
-            'UploadPaper': '/examinformation/upload/paper/',
+            'GET    - List': '/examinformation/',
+            'POST   - Create': '/examinformation/create/',
+            'GET    - Detail': '/examinformation/detail/<str:pk>/',
+            'GET    - DetailByExamid': '/examinformation/detail/exam/<str:pk>/',
+            'PUT    - Update': '/examinformation/update/<str:pk>/',
+            'DELETE - Delete': '/examinformation/delete/<str:pk>/',
+            'POST   - UploadPaper': '/examinformation/upload/paper/',
         },
         'chapter': {
-            'List': '/chapter/',
-            'Create': '/chapter/create/',
-            'Detail': '/chapter/detail/<str:pk>/',
-            'DtailByUserid': '/chapter/detail/user/<str:pk>/',
-            'Update': '/chapter/update/<str:pk>/',
-            'Delete': '/chapter/delete/<str:pk>/',
+            'GET    - List': '/chapter/',
+            'POST   - Create': '/chapter/create/',
+            'GET    - Detail': '/chapter/detail/<str:pk>/',
+            'GET    - DtailByUserid': '/chapter/detail/user/<str:pk>/',
+            'PUT    - Update': '/chapter/update/<str:pk>/',
+            'DELETE - Delete': '/chapter/delete/<str:pk>/',
         },
         'chapteranswer': {
-            'List': '/chapteranswer/',
-            'Create': '/chapteranswer/create/',
-            'Detail': '/chapteranswer/detail/<str:pk>/',
-            'DetailByChapterid': '/chapteranswer/detail/chapter/<str:pk>/',
-            'Update': '/chapteranswer/update/<str:pk>/',
-            'Delete': '/chapteranswer/delete/<str:pk>/',
+            'GET    - List': '/chapteranswer/',
+            'POST   - Create': '/chapteranswer/create/',
+            'GET    - Detail': '/chapteranswer/detail/<str:pk>/',
+            'GET    - DetailByChapterid': '/chapteranswer/detail/chapter/<str:pk>/',
+            'PUT    - Update': '/chapteranswer/update/<str:pk>/',
+            'DELETE - Delete': '/chapteranswer/delete/<str:pk>/',
         },
         'queheaddetails': {
-            'List': '/queheaddetails/',
-            'Create': '/queheaddetails/create/',
-            'Detail': '/queheaddetails/detail/<str:pk>/',
-            'Update': '/queheaddetails/update/<str:pk>/',
-            'Delete': '/queheaddetails/delete/<str:pk>/',
+            'GET    - List': '/queheaddetails/',
+            'POST   - Create': '/queheaddetails/create/',
+            'GET    - Detail': '/queheaddetails/detail/<str:pk>/',
+            'PUT    - Update': '/queheaddetails/update/<str:pk>/',
+            'DELETE - Delete': '/queheaddetails/delete/<str:pk>/',
         },
         'quesheet': {
-            'List': '/quesheet/',
-            'Create': '/quesheet/create/',
-            'Detail': '/quesheet/detail/<str:pk>/',
-            'DetailByUserid': '/quesheet/detail/user/<str:pk>/',
-            'Update': '/quesheet/update/<str:pk>/',
-            'Delete': '/quesheet/delete/<str:pk>/',
+            'GET    - List': '/quesheet/',
+            'POST   - Create': '/quesheet/create/',
+            'GET    - Detail': '/quesheet/detail/<str:pk>/',
+            'GET    - DetailByUserid': '/quesheet/detail/user/<str:pk>/',
+            'PUT    - Update': '/quesheet/update/<str:pk>/',
+            'DELETE - Delete': '/quesheet/delete/<str:pk>/',
         },
         'quetopicdetails': {
-            'List': '/quetopicdetails/',
-            'Create': '/quetopicdetails/create/',
-            'Detail': '/quetopicdetails/detail/<str:pk>/',
-            'Update': '/quetopicdetails/update/<str:pk>/',
-            'Delete': '/quetopicdetails/delete/<str:pk>/',
+            'GET    - List': '/quetopicdetails/',
+            'POST   - Create': '/quetopicdetails/create/',
+            'GET    - Detail': '/quetopicdetails/detail/<str:pk>/',
+            'PUT    - Update': '/quetopicdetails/update/<str:pk>/',
+            'DELETE - Delete': '/quetopicdetails/delete/<str:pk>/',
         },
         'queinformation': {
-            'List': '/queinformation/',
-            'Create': '/queinformation/create/',
-            'Detail': '/queinformation/detail/<str:pk>/',
-            'Update': '/queinformation/update/<str:pk>/',
-            'Delete': '/queinformation/delete/<str:pk>/',
-            'UploadPaper': '/queinformation/upload/paper/',
+            'GET    - List': '/queinformation/',
+            'POST   - Create': '/queinformation/create/',
+            'GET    - Detail': '/queinformation/detail/<str:pk>/',
+            'PUT    - Update': '/queinformation/update/<str:pk>/',
+            'DELETE - Delete': '/queinformation/delete/<str:pk>/',
+            'POST   - UploadPaper': '/queinformation/upload/paper/',
         },
         'request': {
-            'List': '/request/',
-            'Create': '/request/create/',
-            'Detail': '/request/detail/<str:pk>/',
-            'Update': '/request/update/<str:pk>/',
-            'Delete': '/request/delete/<str:pk>/',
-        },
-        'type': {
-            'List': '/type/',
-            'Create': '/type/create/',
-            'Detail': '/type/detail/<str:pk>/',
-            'Update': '/type/update/<str:pk>/',
-            'Delete': '/type/delete/<str:pk>/',
+            'GET    - List': '/request/',
+            'POST   - Create': '/request/create/',
+            'GET    - Detail': '/request/detail/<str:pk>/',
+            'PUT    - Update': '/request/update/<str:pk>/',
+            'DELETE - Delete': '/request/delete/<str:pk>/',
         },
         'subchapter': {
-            'List': '/subchapter/',
-            'Create': '/subchapter/create/',
-            'Detail': '/subchapter/detail/<str:pk>/',
-            'DetailByChapterid': '/subchapter/detail/chapter/<str:pk>/',
-            'Update': '/subchapter/update/<str:pk>/',
-            'Delete': '/subchapter/delete/<str:pk>/',
+            'GET    - List': '/subchapter/',
+            'POST   - Create': '/subchapter/create/',
+            'GET    - Detail': '/subchapter/detail/<str:pk>/',
+            'GET    - DetailByChapterid': '/subchapter/detail/chapter/<str:pk>/',
+            'PUT    - Update': '/subchapter/update/<str:pk>/',
+            'DELETE - Delete': '/subchapter/delete/<str:pk>/',
         },
         'subject': {
-            'List': '/subject/',
-            'Create': '/subject/create/',
-            'Detail': '/subject/detail/<str:pk>/',
-            'DetailByUserid': '/subject/detail/user/<str:pk>/',
-            'Update': '/subject/update/<str:pk>/',
-            'Delete': '/subject/delete/<str:pk>/',
+            'GET    - List': '/subject/',
+            'POST   - Create': '/subject/create/',
+            'GET    - Detail': '/subject/detail/<str:pk>/',
+            'GET    - DetailByUserid': '/subject/detail/user/<str:pk>/',
+            'PUT    - Update': '/subject/update/<str:pk>/',
+            'DELETE - Delete': '/subject/delete/<str:pk>/',
+        },
+        'type': {
+            'GET    - List': '/type/',
+            'POST   - Create': '/type/create/',
+            'GET    - Detail': '/type/detail/<str:pk>/',
+            'PUT    - Update': '/type/update/<str:pk>/',
+            'DELETE - Delete': '/type/delete/<str:pk>/',
         },
     }
     return Response(api_urls)
 
 ##########################################################################################
+#- Method
+def setDatetime(day):
+    datetime_ = datetime.now() + timedelta(days=day)
+    datetime_ = datetime_.replace(hour=23, minute=59, second=0)
+    datetime_ = datetime.strftime(datetime_, "%Y-%m-%dT%H:%M:%SZ")
+    return datetime_
+
+##########################################################################################
+#- Update
+@api_view(['PUT'])
+def update(request):
+    current_time = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+    subject = Subject.objects.filter(deletetimesubject__lt=current_time)
+    for sub in subject:
+        sub.statussubject = '0'
+        sub.save()
+    exam = Exam.objects.filter(deletetimeexam__lt=current_time)
+    for ex in exam:
+        ex.statusexam = '0'
+        ex.save()
+    quesheet = Quesheet.objects.filter(deletetimequesheet__lt=current_time)
+    for qtn in quesheet:
+        qtn.statusquesheet = '0'
+        qtn.save()
+    return Response({"msg" : "อัปเดตสำเร็จ"}, status=status.HTTP_200_OK)
+##########################################################################################
 #- User
+user_notfound = {"err" : "ไม่พบข้อมูลผู้ใช้งาน"}
 @api_view(['GET'])
 def userList(request):
-    queryset = User.objects.all().order_by('userid')
+    try:
+        queryset = User.objects.all().order_by('userid')
+    except User.DoesNotExist:
+        return Response(user_notfound, status=status.HTTP_404_NOT_FOUND)
+    
     serializer = UserSerializer(queryset, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 def userDetail(request, pk):
-    queryset = User.objects.get(userid=pk)
+    try:
+        queryset = User.objects.get(userid=pk)
+    except User.DoesNotExist:
+        return Response(user_notfound, status=status.HTTP_404_NOT_FOUND)
     serializer = UserSerializer(queryset, many=False)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -170,7 +203,7 @@ def userCreate(request):
     salt, hashed_password = hash_password(data['password'])
     data['password'] = hashed_password
     data['salt'] = salt
-    data['createtimeuser'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    data['createtimeuser'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     serializer = UserSerializer(data=data)
     if serializer.is_valid():
         serializer.save()
@@ -178,9 +211,12 @@ def userCreate(request):
     else:
         return Response({"err" : serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['POST'])
+@api_view(['PUT'])
 def userUpdate(request, pk):
-    user = User.objects.get(userid=pk)
+    try:
+        user = User.objects.get(userid=pk)
+    except User.DoesNotExist:
+        return Response(user_notfound, status=status.HTTP_404_NOT_FOUND)
     data = request.data
     salt, hashed_password = hash_password(data['password'])
     data['password'] = hashed_password
@@ -192,23 +228,23 @@ def userUpdate(request, pk):
 
 @api_view(['DELETE'])
 def userDelete(request, pk):
-    user = User.objects.get(userid=pk)
+    try:
+        user = User.objects.get(userid=pk)
+    except User.DoesNotExist:
+        return Response(user_notfound, status=status.HTTP_404_NOT_FOUND)
     user.delete()
     return Response({"msg" : "ลบผู้ใช้งานสำเร็จ"}, status=status.HTTP_200_OK)
 
-@api_view(['POST'])
-def userDuplicateEmail(request):
-    email = request.data['email']
+@api_view(['GET'])
+def userDuplicateEmail(request, email):
     queryset = User.objects.filter(email=email).count()
     if queryset == 0:
         return Response(True)
     else:
         return Response({"err" : "Email มีผู้ใช้งานแล้ว"}, status=status.HTTP_400_BAD_REQUEST)
         
-    
-@api_view(['POST'])
-def userDuplicateGoogleid(request):
-    googleid = request.data['googleid']
+@api_view(['GET'])
+def userDuplicateGoogleid(request, googleid):
     queryset = User.objects.filter(googleid=googleid).count()
     if queryset == 0:
         return Response(True)
@@ -233,9 +269,9 @@ def userLogin(request):
                 "typesid" : queryset[0].typesid.typesid,
             }, status=status.HTTP_200_OK)
         else:
-            return Response({"err" : "รหัสผ่านไม่ถูกต้อง"}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({"err" : "อีเมลหรือรหัสผ่านไม่ถูกต้อง"}, status=status.HTTP_401_UNAUTHORIZED)
     else:
-        return Response({"err" : "ไม่พบ Email นี้ในระบบ"}, status=status.HTTP_401_UNAUTHORIZED)
+        return Response({"err" : "ไม่พบอีเมลนี้ในระบบ"}, status=status.HTTP_401_UNAUTHORIZED)
 
 @api_view(['POST'])
 def userLoginGoogle(request):
@@ -256,21 +292,33 @@ def userLoginGoogle(request):
 
 ##########################################################################################
 #- Exam
+exam_notfound = {"err" : "ไม่พบข้อมูลข้อสอบ"}
 @api_view(['GET'])
 def examList(request):
-    queryset = Exam.objects.all().order_by('examid')
+    try:
+        queryset = Exam.objects.all().order_by('examid')
+    except Exam.DoesNotExist:
+        return Response(exam_notfound, status=status.HTTP_404_NOT_FOUND)
+    
     serializer = ExamSerializer(queryset, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 def examDetail(request, pk):
-    queryset = Exam.objects.get(examid=pk)
+    try:
+        queryset = Exam.objects.get(examid=pk)
+    except Exam.DoesNotExist:
+        return Response(exam_notfound, status=status.HTTP_404_NOT_FOUND)
     serializer = ExamSerializer(queryset, many=False)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 def examDetailBySubid(request, pk):
-    queryset = Exam.objects.filter(subid=pk)
+    try:
+        queryset = Exam.objects.filter(subid=pk)
+    except Exam.DoesNotExist:
+        return Response(exam_notfound, status=status.HTTP_404_NOT_FOUND)
+    
     serializer = ExamSerializer(queryset, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -278,8 +326,9 @@ def examDetailBySubid(request, pk):
 def examCreate(request):
     data = request.data
     data['imganswersheetformat_path'] = request.build_absolute_uri("/media/original_answersheet/")
+    data['statusexam'] = '1'
     data['deletetimeexam'] = None
-    data['createtimeexam'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    data['createtimeexam'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     exam = Exam.objects.filter(subid=data['subid'])
     user = User.objects.get(userid=data['userid'])
     if exam.count() < user.typesid.limitexam:
@@ -290,7 +339,7 @@ def examCreate(request):
     else:
         return Response({"err" : "จำนวนข้อสอบของรายวิชานี้เกินที่กำหนด"}, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['POST'])
+@api_view(['PUT'])
 def examUpdate(request, pk):
     exam = Exam.objects.get(examid=pk)
     serializer = ExamSerializer(instance=exam, data=request.data)
@@ -300,9 +349,16 @@ def examUpdate(request, pk):
 
 @api_view(['DELETE'])
 def examDelete(request, pk):
-    exam = Exam.objects.get(examid=pk)
-    exam.delete()
-    return Response({"msg" : "ลบข้อสอบสำเร็จ"}, status=status.HTTP_200_OK)
+    try:
+        exam = Exam.objects.get(examid=pk)
+    except Exam.DoesNotExist:
+        return Response(exam_notfound, status=status.HTTP_404_NOT_FOUND)
+    
+    data = {"deletetimeexam" : setDatetime(7)}
+    serializer = ExamSerializer(instance=exam, data=data)
+    if serializer.is_valid():
+        serializer.save()
+    return Response({"msg" : "การสอบจะถูกลบในวันที่และเวลา", "deletetime" : data['deletetimeexam']}, status=status.HTTP_200_OK)
 
 @api_view(['POST'])
 def examUploadCSV(request):
@@ -314,8 +370,7 @@ def examUploadCSV(request):
         print(exam.subid)
         media = "/"+str(user.fullname)+"/ans/"+str(exam.subid.subid)+"/"+str(exam.examid)+"/student_list/"
         media_path = fs.path('')+media
-        if not os.path.exists(media_path):
-            os.makedirs(media_path)
+        os.makedirs(media_path, exist_ok=True)
         for filename in os.listdir(media_path):
             if os.path.isfile(os.path.join(media_path, filename)):
                 os.remove(os.path.join(media_path, filename))
@@ -341,8 +396,7 @@ def examUploadLogo(request):
         fs = FileSystemStorage()
         media = "/"+str(user.fullname)+"/ans/"+str(exam.subid.subid)+"/"+str(exam.examid)+"/answersheet_format/"
         media_path = fs.path('')+media
-        if not os.path.exists(media_path):
-            os.makedirs(media_path)
+        os.makedirs(media_path, exist_ok=True)
         for filename in os.listdir(media_path):
             if os.path.isfile(os.path.join(media_path, filename)):
                 os.remove(os.path.join(media_path, filename))
@@ -363,21 +417,33 @@ def examUploadLogo(request):
 
 ##########################################################################################
 #- Examanswers
+examanswers_notfound = {"err" : "ไม่พบข้อมูลเฉลยข้อสอบ"}
 @api_view(['GET'])
 def examanswersList(request):
-    queryset = Examanswers.objects.all().order_by('examanswersid')
+    try:
+        queryset = Examanswers.objects.all().order_by('examanswersid')
+    except Examanswers.DoesNotExist:
+        return Response(examanswers_notfound, status=status.HTTP_404_NOT_FOUND)
+    
     serializer = ExamanswersSerializer(queryset, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 def examanswersDetail(request, pk):
-    queryset = Examanswers.objects.get(examanswersid=pk)
+    try:
+        queryset = Examanswers.objects.get(examanswersid=pk)
+    except Examanswers.DoesNotExist:
+        return Response(examanswers_notfound, status=status.HTTP_404_NOT_FOUND)
+    
     serializer = ExamanswersSerializer(queryset, many=False)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 def examanswersDetailByExamid(request, pk):
-    queryset = Examanswers.objects.filter(examid=pk)
+    try:
+        queryset = Examanswers.objects.filter(examid=pk)
+    except Examanswers.DoesNotExist:
+        return Response(examanswers_notfound, status=status.HTTP_404_NOT_FOUND)
     serializer = ExamanswersSerializer(queryset, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -395,7 +461,7 @@ def examanswersCreate(request):
         return Response({"err" : "จำนวนชุดข้อสอบครบแล้ว"}, status=status.HTTP_400_BAD_REQUEST)
     
 
-@api_view(['POST'])
+@api_view(['PUT'])
 def examanswersUpdate(request, pk):
     examanswers = Examanswers.objects.get(examanswersid=pk)
     serializer = ExamanswersSerializer(instance=examanswers, data=request.data)
@@ -405,7 +471,11 @@ def examanswersUpdate(request, pk):
 
 @api_view(['DELETE'])
 def examanswersDelete(request, pk):
-    examanswers = Examanswers.objects.get(examanswersid=pk)
+    try:
+        examanswers = Examanswers.objects.get(examanswersid=pk)
+    except Examanswers.DoesNotExist:
+        return Response(examanswers_notfound, status=status.HTTP_404_NOT_FOUND)
+    
     examanswers.delete()
     return Response({"msg" : "ลบเฉลยข้อสอบสำเร็จ"}, status=status.HTTP_200_OK)
 
@@ -420,13 +490,11 @@ def examanswersUploadPaper(request):
         media = "/"+str(user.fullname)+"/ans/temp/"
         media_path = fs.path('')+media
         original_path = media_path+"original/"
-        if not os.path.exists(original_path):
-            os.makedirs(original_path)
+        os.makedirs(original_path, exist_ok=True)
         fs.save(original_path+file.name, file)
 
         preprocess_path = media_path+"preprocess/"
-        if not os.path.exists(preprocess_path):
-            os.makedirs(preprocess_path)
+        os.makedirs(preprocess_path, exist_ok=True)
         pre = pre_process_ans(original_path, preprocess_path, file.name)
         if pre == True:
             data = process_ans(preprocess_path, "pre_"+file.name, 120)
@@ -463,21 +531,34 @@ def examanswersUploadPaper(request):
 
 ##########################################################################################
 #- Examinformation
+examinformation_notfound = {"err" : "ไม่พบข้อมูลข้อสอบ"}
 @api_view(['GET'])
 def examinformationList(request):
-    queryset = Examinformation.objects.all().order_by('examinfoid')
+    try:
+        queryset = Examinformation.objects.all().order_by('examinfoid')
+    except Examinformation.DoesNotExist:
+        return Response(examinformation_notfound, status=status.HTTP_404_NOT_FOUND)
+    
     serializer = ExaminformationSerializer(queryset, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 def examinformationDetail(request, pk):
-    queryset = Examinformation.objects.get(examinfoid=pk)
+    try:
+        queryset = Examinformation.objects.get(examinfoid=pk)
+    except Examinformation.DoesNotExist:
+        return Response(examinformation_notfound, status=status.HTTP_404_NOT_FOUND)
+    
     serializer = ExaminformationSerializer(queryset, many=False)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 def examinformationDetailByExamid(request, pk):
-    queryset = Examinformation.objects.filter(examid=pk)
+    try:
+        queryset = Examinformation.objects.filter(examid=pk)
+    except Examinformation.DoesNotExist:
+        return Response(examinformation_notfound, status=status.HTTP_404_NOT_FOUND)
+    
     serializer = ExaminformationSerializer(queryset, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -488,7 +569,7 @@ def examinformationCreate(request):
         serializer.save()
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-@api_view(['POST'])
+@api_view(['PUT'])
 def examinformationUpdate(request, pk):
     user = User.objects.get(userid=request.data['userid'])
     exam = Exam.objects.get(examid=request.data['examid'])
@@ -595,7 +676,11 @@ def examinformationUpdate(request, pk):
 
 @api_view(['DELETE'])
 def examinformationDelete(request, pk):
-    examinformation = Examinformation.objects.get(examinfoid=pk)
+    try:
+        examinformation = Examinformation.objects.get(examinfoid=pk)
+    except Examinformation.DoesNotExist:
+        return Response(examinformation_notfound, status=status.HTTP_404_NOT_FOUND)
+    
     examinformation.delete()
     return Response({"msg" : "ลบข้อมูลข้อสอบสำเร็จ"}, status=status.HTTP_200_OK)
 
@@ -672,7 +757,7 @@ def examinformationUploadPaper(request):
         else:
             examinfo['errorstype'] = "สกุลไฟล์ไม่ถูกต้อง กรุณาเลือกไฟล์ .jpg"
 
-        examinfo['createtimeexaminfo'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        examinfo['createtimeexaminfo'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         examinfo_serializer = ExaminformationSerializer(data=examinfo)
         if examinfo_serializer.is_valid():
             examinfo_serializer.save()
@@ -681,21 +766,34 @@ def examinformationUploadPaper(request):
 
 ##########################################################################################
 #- chapter
+chapter_notfound = {"err" : "ไม่พบข้อมูลบทเรียน"}
 @api_view(['GET'])
 def chapterList(request):
-    queryset = Chapter.objects.all().order_by('chapterid')
+    try:
+        queryset = Chapter.objects.all().order_by('chapterid')
+    except Chapter.DoesNotExist:
+        return Response(chapter_notfound, status=status.HTTP_404_NOT_FOUND)
+    
     serializer = ChapterSerializer(queryset, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 def chapterDetail(request, pk):
-    queryset = Chapter.objects.get(chapterid=pk)
+    try:
+        queryset = Chapter.objects.get(chapterid=pk)
+    except Chapter.DoesNotExist:
+        return Response(chapter_notfound, status=status.HTTP_404_NOT_FOUND)
+    
     serializer = ChapterSerializer(queryset, many=False)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 def chapterDetailByUserid(request, pk):
-    queryset = Chapter.objects.filter(userid=pk)
+    try:
+        queryset = Chapter.objects.filter(userid=pk)
+    except Chapter.DoesNotExist:
+        return Response(chapter_notfound, status=status.HTTP_404_NOT_FOUND)
+    
     serializer = ChapterSerializer(queryset, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -706,7 +804,7 @@ def chapterCreate(request):
         serializer.save()
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-@api_view(['POST'])
+@api_view(['PUT'])
 def chapterUpdate(request, pk):
     chapter = Chapter.objects.get(chapterid=pk)
     serializer = ChapterSerializer(instance=chapter, data=request.data)
@@ -716,27 +814,43 @@ def chapterUpdate(request, pk):
 
 @api_view(['DELETE'])
 def chapterDelete(request, pk):
-    chapter = Chapter.objects.get(chapterid=pk)
+    try:
+        chapter = Chapter.objects.get(chapterid=pk)
+    except Chapter.DoesNotExist:
+        return Response(chapter_notfound, status=status.HTTP_404_NOT_FOUND)
     chapter.delete()
     return Response({"msg" : "ลบบทเรียนสำเร็จ"}, status=status.HTTP_200_OK)
 
 ##########################################################################################
 #- chapteranswer
+chapteranswer_notfound = {"err" : "ไม่พบข้อมูลคำตอบของบทเรียน"}
 @api_view(['GET'])
 def chapteranswerList(request):
-    queryset = Chapteranswer.objects.all().order_by('chapterandanswerid')
+    try:
+        queryset = Chapteranswer.objects.all().order_by('chapterandanswerid')
+    except Chapteranswer.DoesNotExist:
+        return Response(chapteranswer_notfound, status=status.HTTP_404_NOT_FOUND)
+    
     serializer = ChapteranswerSerializer(queryset, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 def chapteranswerDetail(request, pk):
-    queryset = Chapteranswer.objects.get(chapterandanswerid=pk)
+    try:
+        queryset = Chapteranswer.objects.get(chapterandanswerid=pk)
+    except Chapteranswer.DoesNotExist:
+        return Response(chapteranswer_notfound, status=status.HTTP_404_NOT_FOUND)
+    
     serializer = ChapteranswerSerializer(queryset, many=False)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 def chapteranswerDetailByChapterid(request, pk):
-    queryset = Chapteranswer.objects.filter(chapterid=pk)
+    try:
+        queryset = Chapteranswer.objects.filter(chapterid=pk)
+    except Chapteranswer.DoesNotExist:
+        return Response(chapteranswer_notfound, status=status.HTTP_404_NOT_FOUND)
+    
     serializer = ChapteranswerSerializer(queryset, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -747,7 +861,7 @@ def chapteranswerCreate(request):
         serializer.save()
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-@api_view(['POST'])
+@api_view(['PUT'])
 def chapteranswerUpdate(request, pk):
     chapteranswer = Chapteranswer.objects.get(chapterandanswerid=pk)
     serializer = ChapteranswerSerializer(instance=chapteranswer, data=request.data)
@@ -757,27 +871,44 @@ def chapteranswerUpdate(request, pk):
 
 @api_view(['DELETE'])
 def chapteranswerDelete(request, pk):
-    chapteranswer = Chapteranswer.objects.get(chapterandanswerid=pk)
+    try:
+        chapteranswer = Chapteranswer.objects.get(chapterandanswerid=pk)
+    except Chapteranswer.DoesNotExist:
+        return Response(chapteranswer_notfound, status=status.HTTP_404_NOT_FOUND)
+    
     chapteranswer.delete()
     return Response({"msg" : "ลบบทเรียนสำเร็จ"}, status=status.HTTP_200_OK)
 
 ##########################################################################################
 #- Quesheet
+quesheet_notfound = {"err" : "ไม่พบข้อมูลแบบสอบถาม"}
 @api_view(['GET'])
 def quesheetList(request):
-    queryset = Quesheet.objects.all().order_by('quesheetid')
+    try:
+        queryset = Quesheet.objects.all().order_by('quesheetid')
+    except Quesheet.DoesNotExist:
+        return Response(quesheet_notfound, status=status.HTTP_404_NOT_FOUND)
+    
     serializer = QuesheetSerializer(queryset, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 def quesheetDetail(request, pk):
-    queryset = Quesheet.objects.get(quesheetid=pk)
+    try:
+        queryset = Quesheet.objects.get(quesheetid=pk)
+    except Quesheet.DoesNotExist:
+        return Response(quesheet_notfound, status=status.HTTP_404_NOT_FOUND)
+    
     serializer = QuesheetSerializer(queryset, many=False)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 def quesheetDetailByUserid(request, pk):
-    queryset = Quesheet.objects.filter(userid=pk)
+    try:
+        queryset = Quesheet.objects.filter(userid=pk)
+    except Quesheet.DoesNotExist:
+        return Response(quesheet_notfound, status=status.HTTP_404_NOT_FOUND)
+    
     serializer = QuesheetSerializer(queryset, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -796,9 +927,13 @@ def quesheetCreate(request):
               queheaddetails_data['quehead3'].split(','), 
               queheaddetails_data['quehead4'].split(','), 
               queheaddetails_data['quehead5'].split(',')]
-    part_2 = chk_validate_qtn(quetopicdetails_data['quetopicdetails'], quetopicdetails_data['quetopicformat'])
+    for c, i in enumerate(part_1):
+        for cc, ii in enumerate(i):
+            if ii == 'อื่นๆ': part_1[c][cc] += '__________'
+    part_2 = chk_part_2_qtn(quetopicdetails_data['quetopicdetails'], quetopicdetails_data['quetopicformat'])
     if part_2[0] != False:
-        quesheet_data['createtimequesheet'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        quesheet_data['statusquesheet'] = '1'
+        quesheet_data['createtimequesheet'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         quesheet_serializer = QuesheetSerializer(data=quesheet_data)
         if quesheet_serializer.is_valid():
             quesheet_serializer.save()
@@ -821,8 +956,7 @@ def quesheetCreate(request):
         fs = FileSystemStorage()
         media = "/"+str(user.fullname)+"/qtn/"+str(quesheet_serializer.data['quesheetid'])+"/original_sheet/"
         media_path = fs.path('')+media
-        if not os.path.exists(media_path):
-            os.makedirs(media_path)
+        os.makedirs(media_path, exist_ok=True)
         for filename in os.listdir(media_path):
             if os.path.isfile(os.path.join(media_path, filename)):
                 os.remove(os.path.join(media_path, filename))
@@ -844,9 +978,9 @@ def quesheetCreate(request):
         else:
             return Response({"err" : chk}, status=status.HTTP_400_BAD_REQUEST)
     else:
-        return Response({"err" : part_2[1]}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"err" : part_2[1], "err_": part_2[2]}, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['POST'])
+@api_view(['PUT'])
 def quesheetUpdate(request, pk):
     user = User.objects.get(userid=request.data['userid'])
     quesheet_userid = Quesheet.objects.filter(userid=request.data['userid'])
@@ -863,7 +997,7 @@ def quesheetUpdate(request, pk):
                 queheaddetails_data['quehead3'].split(','), 
                 queheaddetails_data['quehead4'].split(','), 
                 queheaddetails_data['quehead5'].split(',')]
-        part_2 = chk_validate_qtn(quetopicdetails_data['quetopicdetails'], quetopicdetails_data['quetopicformat'])
+        part_2 = chk_part_2_qtn(quetopicdetails_data['quetopicdetails'], quetopicdetails_data['quetopicformat'])
         quesheet = Quesheet.objects.get(quesheetid=pk)
         quesheet_serializer = QuesheetSerializer(instance=quesheet, data=quesheet_data)
         if quesheet_serializer.is_valid():
@@ -912,18 +1046,16 @@ def quesheetUpdate(request, pk):
 
 @api_view(['DELETE'])
 def quesheetDelete(request, pk):
-    queheaddetails = Queheaddetails.objects.get(quesheetid_head=pk)
-    queheaddetails.delete()
-    quetopicdetails = Quetopicdetails.objects.get(quesheetid_topic=pk)
-    quetopicdetails.delete()
-    quesheet = Quesheet.objects.get(quesheetid=pk)
-    quesheet.delete()
-    fs = FileSystemStorage()
-    media = "/"+str(request.data['username'])+"/qtn/"+str(pk)+"/"
-    media_path = fs.path('')+media
-    if os.path.exists(media_path):
-        shutil.rmtree(media_path)
-    return Response({"msg" : "ลบแบบสอบถามสำเร็จ"}, status=status.HTTP_200_OK)
+    try:
+        quesheet = Quesheet.objects.get(quesheetid=pk)
+    except Quesheet.DoesNotExist:
+        return Response(quesheet_notfound, status=status.HTTP_404_NOT_FOUND)
+    
+    data = {'deletetimequesheet' : setDatetime(7)}
+    serializer = QuesheetSerializer(instance=quesheet, data=data)
+    if serializer.is_valid():
+        serializer.save()
+    return Response({"msg" : "แบบสอบถามจะถูกลบในวันที่และเวลา", "deletetime" : data['deletetimequesheet']}, status=status.HTTP_200_OK)
 
 ##########################################################################################
 #- Queheaddetails
@@ -946,7 +1078,7 @@ def queheaddetailsCreate(request):
         serializer.save()
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-@api_view(['POST'])
+@api_view(['PUT'])
 def queheaddetailsUpdate(request, pk):
     queheaddetails = Queheaddetails.objects.get(queheaddetailsid=pk)
     serializer = QueheaddetailsSerializer(instance=queheaddetails, data=request.data)
@@ -981,7 +1113,7 @@ def quetopicdetailsCreate(request):
         serializer.save()
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-@api_view(['POST'])
+@api_view(['PUT'])
 def quetopicdetailsUpdate(request, pk):
     quetopicdetails = Quetopicdetails.objects.get(quetopicdetailsid=pk)
     serializer = QuetopicdetailsSerializer(instance=quetopicdetails, data=request.data)
@@ -997,15 +1129,24 @@ def quetopicdetailsDelete(request, pk):
 
 ##########################################################################################
 #- Queinformation
+Queinformation_notfound = {"err" : "ไม่พบข้อมูลแบบสอบถาม"}
 @api_view(['GET'])
 def queinformationList(request):
-    queryset = Queinformation.objects.all().order_by('queinfoid')
+    try:
+        queryset = Queinformation.objects.all().order_by('queinfoid')
+    except Queinformation.DoesNotExist:
+        return Response(Queinformation_notfound, status=status.HTTP_404_NOT_FOUND)
+    
     serializer = QueinformationSerializer(queryset, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 def queinformationDetail(request, pk):
-    queryset = Queinformation.objects.get(queinfoid=pk)
+    try:
+        queryset = Queinformation.objects.get(queinfoid=pk)
+    except Queinformation.DoesNotExist:
+        return Response(Queinformation_notfound, status=status.HTTP_404_NOT_FOUND)
+    
     serializer = QueinformationSerializer(queryset, many=False)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -1016,7 +1157,7 @@ def queinformationCreate(request):
         serializer.save()
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-@api_view(['POST'])
+@api_view(['PUT'])
 def queinformationUpdate(request, pk):
     queinformation = Queinformation.objects.get(queinfoid=pk)
     serializer = QueinformationSerializer(instance=queinformation, data=request.data)
@@ -1026,7 +1167,11 @@ def queinformationUpdate(request, pk):
 
 @api_view(['DELETE'])
 def queinformationDelete(request, pk):
-    queinformation = Queinformation.objects.get(queinfoid=pk)
+    try:
+        queinformation = Queinformation.objects.get(queinfoid=pk)
+    except Queinformation.DoesNotExist:
+        return Response(Queinformation_notfound, status=status.HTTP_404_NOT_FOUND)
+    
     queinformation.delete()
     return Response({"msg" : "ลบข้อมูลแบบสอบถามสำเร็จ"}, status=status.HTTP_200_OK)
 
@@ -1037,6 +1182,21 @@ def queinformationUploadPaper(request):
     quesheet = Quesheet.objects.get(quesheetid=request.data['quesheetid'])
     queheaddetails = Queheaddetails.objects.get(quesheetid=request.data['quesheetid'])
     quetopicdetails = Quetopicdetails.objects.get(quesheetid=request.data['quesheetid'])
+
+    quehead = [queheaddetails.quehead1, 
+               queheaddetails.quehead2, 
+               queheaddetails.quehead3, 
+               queheaddetails.quehead4, 
+               queheaddetails.quehead5]
+    p1_answer_format = []
+    for c, i in enumerate(quehead):
+        i = i.split(',')
+        for cc, ii in enumerate(i):
+            if ii == 'อื่นๆ':
+                p1_answer_format.append("p1"+str(c+1)+str(cc))
+
+    print(p1_answer_format)
+                
     fs = FileSystemStorage()
     default_path = "/"+str(user.fullname)+"/qtn/"+str(request.data['quesheetid'])+"/"
     ori_path = fs.path('')+default_path+"questionnaire/original/"
@@ -1080,25 +1240,26 @@ def queinformationUploadPaper(request):
                         for iindex, ii in enumerate(i):
                             format_part_2.append([])
 
-                proc = process_qtn(pre_path, part_1_path, part_3_path,"pre_"+file.name, [], format_part_1, format_part_2)
-                
+                proc = process_qtn(pre_path, part_1_path, part_3_path,"pre_"+file.name, p1_answer_format, format_part_1, format_part_2)
+                print(proc)
                 if proc[0][0]:
+                    print("Pass")
                     valid = chk_validate_qtn(proc[1], proc[2])
-                    if valid[0][0]:
-                        queinformation_data['ansquehead'] = valid[1]
-                        queinformation_data['ansquetopic'] = valid[2]
-                        if data != False:
-                            if data[0] != "CE KMITL-"+str(request.data['quesheetid']):
-                                queinformation_data['errorstype'] = "QR Code ไม่ตรงกับแบบสอบถาม"
-                    else:
-                        queinformation_data['errorstype'] = valid[0][1]+","+valid[0][2] if valid[0][2] != "" else valid[0][1]
+                    # if valid[0][0]:
+                    queinformation_data['ansquehead'] = valid[1]
+                    queinformation_data['ansquetopic'] = valid[2]
+                    if data != False:
+                        if data[0] != "CE KMITL-"+str(request.data['quesheetid']):
+                            queinformation_data['errorstype'] = "QR Code ไม่ตรงกับแบบสอบถาม"
+                    # else:
+                    #     queinformation_data['errorstype'] = str(valid[0][1])+","+str(valid[0][2]) if valid[0][2] != "" else valid[0][1]
                 else:
-                    queinformation_data['errorstype'] = proc[0][1]+","+proc[0][2] if proc[0][2] != "" else proc[0][1]
+                    queinformation_data['errorstype'] = str(proc[0][1])+","+str(proc[0][2]) if proc[0][2] != "" else str(proc[0][1])
             else:
                 queinformation_data['errorstype'] = pre
         else:
             queinformation_data['errorstype'] = "สกุลไฟล์ไม่ถูกต้อง กรุณาเลือกไฟล์ .jpg"
-        queinformation_data['createtimequesheetinfo'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        queinformation_data['createtimequesheetinfo'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         queinformation_serializer = QueinformationSerializer(data=queinformation_data)
         if queinformation_serializer.is_valid():
             queinformation_serializer.save()
@@ -1107,15 +1268,24 @@ def queinformationUploadPaper(request):
 
 ##########################################################################################
 #- Request
+request_notfound = {"err" : "ไม่พบข้อมูลคำร้องขอ"}
 @api_view(['GET'])
 def requestList(request):
-    queryset = Request.objects.all().order_by('requestid')
+    try:
+        queryset = Request.objects.all().order_by('requestid')
+    except Request.DoesNotExist:
+        return Response(request_notfound, status=status.HTTP_404_NOT_FOUND)
+    
     serializer = RequestSerializer(queryset, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 def requestDetail(request, pk):
-    queryset = Request.objects.get(requestid=pk)
+    try:
+        queryset = Request.objects.get(requestid=pk)
+    except Request.DoesNotExist:
+        return Response(request_notfound, status=status.HTTP_404_NOT_FOUND)
+    
     serializer = RequestSerializer(queryset, many=False)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -1129,13 +1299,13 @@ def requestCreate(request):
     fs.save(media_path+"request.jpg", file)
     data = request.data
     data['imgrequest_path'] = request.build_absolute_uri("/media/"+str(user.fullname)+"/request/request.jpg")
-    data['status_request'] = "Waiting for confirmation"
+    data['status_request'] = "1"
     serializer = RequestSerializer(data=request.data)
     if serializer.is_valid():
         serializer.save()
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-@api_view(['POST'])
+@api_view(['PUT'])
 def requestUpdate(request, pk):
     request_ = Request.objects.get(requestid=pk)
     serializer = RequestSerializer(instance=request_, data=request.data)
@@ -1145,21 +1315,34 @@ def requestUpdate(request, pk):
 
 @api_view(['DELETE'])
 def requestDelete(request, pk):
-    request = Request.objects.get(requestid=pk)
-    request.delete()
+    try:
+        request_ = Request.objects.get(requestid=pk)
+    except Request.DoesNotExist:
+        return Response(request_notfound, status=status.HTTP_404_NOT_FOUND)
+    
+    request_.delete()
     return Response({"msg" : "ลบคำร้องขอสำเร็จ"}, status=status.HTTP_200_OK)
 
 ##########################################################################################
 #- type
+type_notfound = {"err" : "ไม่พบข้อมูลประเภทผู้ใช้งาน"}
 @api_view(['GET'])
 def typeList(request):
-    queryset = Type.objects.all().order_by('typesid')
+    try:
+        queryset = Type.objects.all().order_by('typesid')
+    except Type.DoesNotExist:
+        return Response(type_notfound, status=status.HTTP_404_NOT_FOUND)
+    
     serializer = TypeSerializer(queryset, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 def typeDetail(request, pk):
-    queryset = Type.objects.get(typesid=pk)
+    try:
+        queryset = Type.objects.get(typesid=pk)
+    except Type.DoesNotExist:
+        return Response(type_notfound, status=status.HTTP_404_NOT_FOUND)
+    
     serializer = TypeSerializer(queryset, many=False)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -1170,7 +1353,7 @@ def typeCreate(request):
         serializer.save()
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-@api_view(['POST'])
+@api_view(['PUT'])
 def typeUpdate(request, pk):
     type = Type.objects.get(typesid=pk)
     serializer = TypeSerializer(instance=type, data=request.data)
@@ -1180,27 +1363,44 @@ def typeUpdate(request, pk):
 
 @api_view(['DELETE'])
 def typeDelete(request, pk):
-    type = Type.objects.get(typesid=pk)
+    try:
+        type = Type.objects.get(typesid=pk)
+    except Type.DoesNotExist:
+        return Response(type_notfound, status=status.HTTP_404_NOT_FOUND)
+    
     type.delete()
     return Response({"msg" : "ลบประเภทผู้ใช้งานสำเร็จ"}, status=status.HTTP_200_OK)
 
 ##########################################################################################
 #- subchapter
+subchapter_notfound = {"err" : "ไม่พบข้อมูลบทย่อย"}
 @api_view(['GET'])
 def subchapterList(request):
-    queryset = Subchapter.objects.all().order_by('subchapterid')
+    try:
+        queryset = Subchapter.objects.all().order_by('subchapterid')
+    except Subchapter.DoesNotExist:
+        return Response(subchapter_notfound, status=status.HTTP_404_NOT_FOUND)
+    
     serializer = SubchapterSerializer(queryset, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 def subchapterDetail(request, pk):
-    queryset = Subchapter.objects.get(subchapterid=pk)
+    try:
+        queryset = Subchapter.objects.get(subchapterid=pk)
+    except Subchapter.DoesNotExist:
+        return Response(subchapter_notfound, status=status.HTTP_404_NOT_FOUND)
+    
     serializer = SubchapterSerializer(queryset, many=False)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 def subchapterDetailByChapterid(request, pk):
-    queryset = Subchapter.objects.filter(chapterid=pk)
+    try:
+        queryset = Subchapter.objects.filter(chapterid=pk)
+    except Subchapter.DoesNotExist:
+        return Response(subchapter_notfound, status=status.HTTP_404_NOT_FOUND)
+    
     serializer = SubchapterSerializer(queryset, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -1211,7 +1411,7 @@ def subchapterCreate(request):
         serializer.save()
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-@api_view(['POST'])
+@api_view(['PUT'])
 def subchapterUpdate(request, pk):
     subchapter = Subchapter.objects.get(subchapterid=pk)
     serializer = SubchapterSerializer(instance=subchapter, data=request.data)
@@ -1221,38 +1421,56 @@ def subchapterUpdate(request, pk):
 
 @api_view(['DELETE'])
 def subchapterDelete(request, pk):
-    subchapter = Subchapter.objects.get(subchapterid=pk)
+    try:
+        subchapter = Subchapter.objects.get(subchapterid=pk)
+    except Subchapter.DoesNotExist:
+        return Response(subchapter_notfound, status=status.HTTP_404_NOT_FOUND)
+    
     subchapter.delete()
     return Response({"msg" : "ลบบทย่อยสำเร็จ"}, status=status.HTTP_200_OK)
 
 ##########################################################################################
 #- Subject
+subject_notfound = {"err" : "ไม่พบข้อมูลวิชา"}
 @api_view(['GET'])
 def subjectList(request):
-    queryset = Subject.objects.all().order_by('subid')
+    try:
+        queryset = Subject.objects.all().order_by('subid')
+    except Subject.DoesNotExist:
+        return Response(subject_notfound, status=status.HTTP_404_NOT_FOUND)
+    
     serializer = SubjectSerializer(queryset, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 def subjectDetail(request, pk):
-    queryset = Subject.objects.get(subid=pk)
+    try:
+        queryset = Subject.objects.get(subid=pk)
+    except Subject.DoesNotExist:
+        return Response(subject_notfound, status=status.HTTP_404_NOT_FOUND)
+    
     serializer = SubjectSerializer(queryset, many=False)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 def subjectDetailByUserid(request, pk):
-    queryset = Subject.objects.filter(userid=pk)
+    try:
+        queryset = Subject.objects.filter(userid=pk, statussubject="1")
+    except Subject.DoesNotExist:
+        return Response(subject_notfound, status=status.HTTP_404_NOT_FOUND)
+    
     serializer = SubjectSerializer(queryset, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['POST'])
 def subjectCreate(request):
     user = User.objects.get(userid=request.data['userid'])
-    subject = Subject.objects.filter(subcode=request.data['userid'])
+    subject = Subject.objects.filter(userid=request.data['userid'], statussubject="1")
     if subject.count() < int(user.typesid.limitsubject):
         data = request.data
+        data['statussubject'] = "1"
         data['deletetimesubject'] = None
-        data['createtimesubject'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        data['createtimesubject'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         serializer = SubjectSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
@@ -1262,7 +1480,7 @@ def subjectCreate(request):
     else:
         return Response({"err" : "จำนวนวิชาเกินที่กำหนด"}, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['POST'])
+@api_view(['PUT'])
 def subjectUpdate(request, pk):
     subject = Subject.objects.get(subid=pk)
     serializer = SubjectSerializer(instance=subject, data=request.data)
@@ -1274,8 +1492,15 @@ def subjectUpdate(request, pk):
 
 @api_view(['DELETE'])
 def subjectDelete(request, pk):
-    subject = Subject.objects.get(subid=pk)
-    subject.delete()
-    return Response({"msg" : "ลบวิชาสำเร็จ"}, status=status.HTTP_200_OK)
+    try:
+        subject = Subject.objects.get(subid=pk)
+    except Subject.DoesNotExist:
+        return Response(subject_notfound, status=status.HTTP_400_BAD_REQUEST)
+    
+    data = {"deletetimesubject" : setDatetime(7)}
+    serializer = SubjectSerializer(instance=subject, data=data)
+    if serializer.is_valid():
+        serializer.save()
+    return Response({"msg" : "วิชาจะถูกลบในวันที่และเวลา", "deletetime": data['deletetimesubject']}, status=status.HTTP_200_OK)
 
 ##########################################################################################

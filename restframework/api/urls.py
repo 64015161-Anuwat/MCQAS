@@ -25,8 +25,8 @@ urlpatterns = [
     path('user/create/', views.userCreate, name='User-Create'),
     path('user/update/<str:pk>/', views.userUpdate, name='User-Update'),
     path('user/delete/<str:pk>/', views.userDelete, name='User-Delete'),
-    path('user/duplicate/email/', views.userDuplicateEmail, name='User-Duplicate-Email'),
-    path('user/duplicate/googleid/', views.userDuplicateGoogleid, name='User-Duplicate-Googleid'),
+    path('user/duplicate/email/<str:email>/', views.userDuplicateEmail, name='User-Duplicate-Email'),
+    path('user/duplicate/googleid/<str:googleid>/', views.userDuplicateGoogleid, name='User-Duplicate-Googleid'),
     path('user/login/', views.userLogin, name='User-Login'),
     path('user/login/google/', views.userLoginGoogle, name='User-Login-Google'),
     ############################################################
@@ -121,5 +121,6 @@ urlpatterns = [
     path('subject/update/<str:pk>/', views.subjectUpdate, name='Subject-Update'),
     path('subject/delete/<str:pk>/', views.subjectDelete, name='Subject-Delete'),
     ############################################################
-
+    path('update/', views.update, name='Update')
+    ############################################################
 ]
