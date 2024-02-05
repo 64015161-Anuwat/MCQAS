@@ -315,7 +315,7 @@ def examDetail(request, pk):
 @api_view(['GET'])
 def examDetailBySubid(request, pk):
     try:
-        queryset = Exam.objects.filter(subid=pk)
+        queryset = Exam.objects.filter(subid=pk, statusexam='1')
     except Exam.DoesNotExist:
         return Response(exam_notfound, status=status.HTTP_404_NOT_FOUND)
     
@@ -367,7 +367,6 @@ def examUploadCSV(request):
     if file.name.endswith('.csv'):
         exam = Exam.objects.get(examid=request.data['examid'])
         fs = FileSystemStorage()
-        print(exam.subid)
         media = "/"+str(user.fullname)+"/ans/"+str(exam.subid.subid)+"/"+str(exam.examid)+"/student_list/"
         media_path = fs.path('')+media
         os.makedirs(media_path, exist_ok=True)
@@ -483,7 +482,6 @@ def examanswersDelete(request, pk):
 def examanswersUploadPaper(request):
     file = request.FILES['file']
     user = User.objects.get(userid=request.data['userid'])
-    print(file.name)
     if file.name.lower().endswith('.jpg') or file.name.lower().endswith('.jpeg'):
         answers_ = ''
         fs = FileSystemStorage()
@@ -574,8 +572,8 @@ def examinformationUpdate(request, pk):
     user = User.objects.get(userid=request.data['userid'])
     exam = Exam.objects.get(examid=request.data['examid'])
     examinformation = Examinformation.objects.get(examinfoid=pk)
-    file = request.FILES['file'] if 'file' in request.FILES else False
-    if file == False:
+    file = request.FILES['file'] if 'file' in request.FILES else None
+    if file == None:
         examinformation_update = json.loads(request.data['examinformation'])
         serializer = ExaminformationSerializer(instance=examinformation, data=examinformation_update)
         if serializer.is_valid():
@@ -609,7 +607,6 @@ def examinformationUpdate(request, pk):
         }
         if file.name.lower().endswith('.jpg') or file.name.lower().endswith('.jpeg'):
             old_img = examinformation.imgansstd_path.split("/")[-1]
-            print(old_img)
             if os.path.exists(ori_path):
                 os.remove(ori_path+old_img)
             if os.path.exists(pre_path):
@@ -669,6 +666,7 @@ def examinformationUpdate(request, pk):
                 examinfo['errorstype'] = pre
         else:
             return Response({"err" : "สกุลไฟล์ไม่ถูกต้อง กรุณาเลือกไฟล์ .jpg"}, status=status.HTTP_400_BAD_REQUEST)
+    
     serializer = ExaminformationSerializer(instance=examinformation, data=examinfo)
     if serializer.is_valid():
         serializer.save()
@@ -905,7 +903,7 @@ def quesheetDetail(request, pk):
 @api_view(['GET'])
 def quesheetDetailByUserid(request, pk):
     try:
-        queryset = Quesheet.objects.filter(userid=pk)
+        queryset = Quesheet.objects.filter(userid=pk, statusquesheet='1')
     except Quesheet.DoesNotExist:
         return Response(quesheet_notfound, status=status.HTTP_404_NOT_FOUND)
     
@@ -1159,11 +1157,111 @@ def queinformationCreate(request):
 
 @api_view(['PUT'])
 def queinformationUpdate(request, pk):
+    user = User.objects.get(userid=request.data['userid'])
+    quesheet = Quesheet.objects.get(quesheetid=request.data['quesheetid'])
+    queheaddetails = Queheaddetails.objects.get(quesheetid=request.data['quesheetid'])
+    quetopicdetails = Quetopicdetails.objects.get(quesheetid=request.data['quesheetid'])
     queinformation = Queinformation.objects.get(queinfoid=pk)
-    serializer = QueinformationSerializer(instance=queinformation, data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-    return Response(serializer.data, status=status.HTTP_200_OK)
+    file = request.FILES['file'] if 'file' in request.FILES else None
+    if file == None:
+        queinformation_update = json.loads(request.data['queinformation'])
+        serializer = QueinformationSerializer(instance=queinformation, data=queinformation_update)
+        if serializer.is_valid():
+            serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    else:
+        quehead = [queheaddetails.quehead1, 
+                   queheaddetails.quehead2, 
+                   queheaddetails.quehead3, 
+                   queheaddetails.quehead4, 
+                   queheaddetails.quehead5]
+        p1_answer_format = []
+        for c, i in enumerate(quehead):
+            i = i.split(',')
+            for cc, ii in enumerate(i):
+                if ii == 'อื่นๆ':
+                    p1_answer_format.append("p1"+str(c+1)+str(cc))
+
+        fs = FileSystemStorage()
+        default_path = "/"+str(user.fullname)+"/qtn/"+str(request.data['quesheetid'])+"/"
+        ori_path = fs.path('')+default_path+"questionnaire/original/"
+        pre_path = fs.path('')+default_path+"questionnaire/preprocess/"
+        os.makedirs(ori_path, exist_ok=True)
+        part_1_path = fs.path('')+default_path+"result/part1/"
+        os.makedirs(part_1_path, exist_ok=True)
+        part_3_path = fs.path('')+default_path+"result/part3/"
+        os.makedirs(part_3_path, exist_ok=True)
+
+        queinformation_data = {
+            "quesheetid" : request.data['quesheetid'],
+            "ansquehead" : None,
+            "ansquetopic" : None,
+            "imgansstd_path" : None,
+            "status_queinfo" : "Offline",
+            "errorstype" : None
+        }
+
+        if file.name.lower().endswith('.jpg') or file.name.lower().endswith('.jpeg'):
+            fs.save(ori_path+file.name, file)
+            data = read_qrcode(ori_path+file.name, request.data['src'])
+            pre = pre_process_qtn(ori_path, pre_path, file.name)
+            if pre == True:
+                img_link = request.build_absolute_uri("/media"+default_path+"questionnaire/original/"+file.name)
+                queinformation_data['imgansstd_path'] = img_link
+
+                format_part_1 = []
+                part_1 = [queheaddetails.quehead1, queheaddetails.quehead2, queheaddetails.quehead3, queheaddetails.quehead4, queheaddetails.quehead5]
+                for index, i in enumerate(part_1):
+                    head = i.split(',')
+                    format_part_1.append([])
+                    for index_, ii in enumerate(head):
+                        format_part_1[-1].append(index_+1)
+
+                format_part_2 = []
+                part_2 = chk_part_2_qtn(quetopicdetails.quetopicdetails, quetopicdetails.quetopicformat)
+                for index, i in enumerate(part_2):
+                    if i == "nohead":
+                        format_part_2.append([])
+                    else:
+                        for iindex, ii in enumerate(i):
+                            format_part_2.append([])
+
+                proc = process_qtn(pre_path, part_1_path, part_3_path,"pre_"+file.name, p1_answer_format, format_part_1, format_part_2)
+
+                if proc[0][0]:
+                    valid = chk_validate_qtn(proc[1], proc[2])
+                    queinformation_data['ansquehead'] = valid[1]
+                    queinformation_data['ansquetopic'] = valid[2]
+                    if data != False:
+                        if data[0] != "CE KMITL-"+str(request.data['quesheetid']):
+                            queinformation_data['errorstype'] = "QR Code ไม่ตรงกับแบบสอบถาม"
+
+                    if valid[0] == False:
+                        if queinformation_data['errorstype'] != None:
+                            queinformation_data['errorstype'] += ","
+
+                        if valid[0][1] != None and valid[0][2] != None:
+                            queinformation_data['errorstype'] = str(valid[0][1])+","+str(valid[0][2])
+                        elif valid[0][1] != None and valid[0][2] == None:
+                            queinformation_data['errorstype'] = valid[0][1]
+                        elif valid[0][1] == None and valid[0][2] != None:
+                            queinformation_data['errorstype'] = valid[0][2]
+                else:
+                    if proc[0][1] != None and proc[0][2] != None:
+                        queinformation_data['errorstype'] = str(proc[0][1])+","+str(proc[0][2])
+                    elif proc[0][1] != None and proc[0][2] == None:
+                        queinformation_data['errorstype'] = proc[0][1]
+                    elif proc[0][1] == None and proc[0][2] != None:
+                        queinformation_data['errorstype'] = proc[0][2]
+            else:
+                queinformation_data['errorstype'] = pre
+        else:
+            return Response({"err" : "สกุลไฟล์ไม่ถูกต้อง กรุณาเลือกไฟล์ .jpg"}, status=status.HTTP_400_BAD_REQUEST)
+
+        queinformation_serializer = QueinformationSerializer(instance=queinformation, data=queinformation_data)
+        if queinformation_serializer.is_valid():
+            queinformation_serializer.save()
+        return Response(queinformation_serializer.data, status=status.HTTP_201_CREATED)
 
 @api_view(['DELETE'])
 def queinformationDelete(request, pk):
@@ -1194,8 +1292,6 @@ def queinformationUploadPaper(request):
         for cc, ii in enumerate(i):
             if ii == 'อื่นๆ':
                 p1_answer_format.append("p1"+str(c+1)+str(cc))
-
-    print(p1_answer_format)
                 
     fs = FileSystemStorage()
     default_path = "/"+str(user.fullname)+"/qtn/"+str(request.data['quesheetid'])+"/"
@@ -1241,20 +1337,32 @@ def queinformationUploadPaper(request):
                             format_part_2.append([])
 
                 proc = process_qtn(pre_path, part_1_path, part_3_path,"pre_"+file.name, p1_answer_format, format_part_1, format_part_2)
-                print(proc)
+
                 if proc[0][0]:
-                    print("Pass")
                     valid = chk_validate_qtn(proc[1], proc[2])
-                    # if valid[0][0]:
                     queinformation_data['ansquehead'] = valid[1]
                     queinformation_data['ansquetopic'] = valid[2]
                     if data != False:
                         if data[0] != "CE KMITL-"+str(request.data['quesheetid']):
                             queinformation_data['errorstype'] = "QR Code ไม่ตรงกับแบบสอบถาม"
-                    # else:
-                    #     queinformation_data['errorstype'] = str(valid[0][1])+","+str(valid[0][2]) if valid[0][2] != "" else valid[0][1]
+
+                    if valid[0][0] == False:
+                        if queinformation_data['errorstype'] != None:
+                            queinformation_data['errorstype'] += ","
+                            
+                        if valid[0][1] != None and valid[0][2] != None:
+                            queinformation_data['errorstype'] = str(valid[0][1])+","+str(valid[0][2])
+                        elif valid[0][1] != None and valid[0][2] == None:
+                            queinformation_data['errorstype'] = valid[0][1]
+                        elif valid[0][1] == None and valid[0][2] != None:
+                            queinformation_data['errorstype'] = valid[0][2]
                 else:
-                    queinformation_data['errorstype'] = str(proc[0][1])+","+str(proc[0][2]) if proc[0][2] != "" else str(proc[0][1])
+                    if proc[0][1] != None and proc[0][2] != None:
+                        queinformation_data['errorstype'] = str(proc[0][1])+","+str(proc[0][2])
+                    elif proc[0][1] != None and proc[0][2] == None:
+                        queinformation_data['errorstype'] = proc[0][1]
+                    elif proc[0][1] == None and proc[0][2] != None:
+                        queinformation_data['errorstype'] = proc[0][2]
             else:
                 queinformation_data['errorstype'] = pre
         else:

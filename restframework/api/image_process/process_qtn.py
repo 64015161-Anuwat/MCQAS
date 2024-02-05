@@ -173,8 +173,8 @@ def process_qtn(srcpath, dstpathp1, dstpathp3, file, p1, indpart1, indpart2):
         chk_err = True
         if err1 != 0 or err2 != 0:
             chk_err = False
-        if err1 == 0: err1 = ""
-        if err2 == 0: err2 = ""
+        if err1 == 0: err1 = None
+        if err2 == 0: err2 = None
         err=[chk_err, err1, err2]
 
         return (err,part1,part2)
