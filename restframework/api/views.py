@@ -325,6 +325,7 @@ def examDetailBySubid(request, pk):
 @api_view(['POST'])
 def examCreate(request):
     data = request.data
+    data['answersheetformat'] = '1'
     data['imganswersheetformat_path'] = request.build_absolute_uri("/media/original_answersheet/")
     data['statusexam'] = '1'
     data['deletetimeexam'] = None
