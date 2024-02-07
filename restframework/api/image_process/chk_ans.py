@@ -4,10 +4,15 @@ def chk_ans(ans, chno, chans, measure):
     try:
         ans = ans.split(",")
         ans = [ans[i].split(":") for i in range(len(ans))]
+
         chans = chans.split(",")
         chans = [chans[i].split(":") for i in range(len(chans))]
+
         measure = measure.split(":")
         measure = [measure[i].split(",") for i in range(len(measure))]
+
+        byno = []
+
         max_score = 0
         choice_score = 0
         score = 0
@@ -27,15 +32,29 @@ def chk_ans(ans, chno, chans, measure):
                         if str(ans[i][ii]) == str(chans[i][iii]):
                             chk_correct_all += 1
                             rightperchoice += 1
-                            if ms[4] == '0': score += int(ms[1])/len(chans[i])
                         else:
-                            if ms[4] == '0': score -= int(ms[2])/len(chans[i])
                             if str(ans[i][ii]) == 'n': notans += 1
-                max_score += int(ms[1])
-                if(ms[4] == '1' and chk_correct_all == len(chans[i])): score += int(ms[1])
-                else : score -= int(ms[2])
-                if len(ans[i]) == 0:
-                    score -= int(ms[3])
+
+                max_score += int(ms[3])
+                old_score = score
+                if ms[1] == '1':
+                    if chk_correct_all == len(chans[i]):
+                        score += int(ms[3])
+                    else:
+                        score -= int(ms[4])
+                elif ms[1] == '2':
+                    if ms[4] != '0' and chk_correct_all != len(chans[i]):
+                        score -= int(ms[4])
+                    else:
+                        score += int(ms[3])/len(chans[i])*chk_correct_all
+                elif ms[1] == '3':
+                    if ms[4] != '0' and chk_correct_all != len(chans[i]):
+                        score -= int(ms[4])
+                    else:
+                        score += int(ms[3])*int(ms[2])/100
+                
+                byno.append([i, score-old_score, score])
+
                 if i != 0: analys += ","
                 if chk_correct_all == len(chans[i]):
                     right += 1
@@ -47,6 +66,14 @@ def chk_ans(ans, chno, chans, measure):
         
         err = ""
 
+        for i in range(len(byno)):
+            for ii in range(len(byno[i])):
+                if ii == 0:
+                    print(byno[i][ii]+1, end=" ")
+                else:
+                    print(byno[i][ii], end=" ")
+            print()
+            
         if countchk != chno:
             err = "เกณฑ์คะแนนไม่เท่ากับจำนวนข้อ"
             return (err, None, None, None, None, None, None, None, None, None)

@@ -17,15 +17,15 @@ def pre_process_ans(srcpath, dstpath, filename):
         img = cv2.imread(srcpath+filename)
         gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         # thresholding image
-        # thresh, th = cv2.threshold(gray_img, 150, 255, cv2.THRESH_BINARY_INV)
-        # kernel = np.ones((5, 5), np.uint8)
-        # th = cv2.morphologyEx(th, cv2.MORPH_CLOSE, kernel, iterations=2)
+        thresh, th = cv2.threshold(gray_img, 200, 255, cv2.THRESH_BINARY_INV)
+        kernel = np.ones((5, 5), np.uint8)
+        th = cv2.morphologyEx(th, cv2.MORPH_OPEN, kernel, iterations=2)
 
-        blurred = cv2.GaussianBlur(gray_img, (5, 5), 0)
-        edged = cv2.Canny(blurred, 30, 100)
+        # blurred = cv2.GaussianBlur(gray_img, (5, 5), 0)
+        # edged = cv2.Canny(blurred, 30, 100)
         height, width, ch = img.shape
         
-        contours, hierarchy = cv2.findContours(edged, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        contours, hierarchy = cv2.findContours(th, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         largest = None
         max_area = 0

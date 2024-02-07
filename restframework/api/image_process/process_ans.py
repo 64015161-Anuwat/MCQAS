@@ -493,10 +493,10 @@ def process_ans(srcpath, filename, num_choice, debug=False):
 
             gray = cv2.cvtColor(table_ans, cv2.COLOR_BGR2GRAY)
             gray = cv2.GaussianBlur(gray, (5, 5), 0)
-            ret, thresh = cv2.threshold(gray, 220, 255, cv2.THRESH_BINARY)
+            ret, thresh = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY)
             # thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
             linek = np.ones((5,5),np.uint8)
-            thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, linek ,iterations=1)
+            thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, linek ,iterations=2)
             # cv2.imshow("0", thresh)
             # cv2.waitKey(0)
 
@@ -562,71 +562,71 @@ def process_ans(srcpath, filename, num_choice, debug=False):
         error = [error_table_std, error_table_sub, error_table_ans, error_mkv, error_mkvr, error_mkh, error_mkhb]
         ##############################################################################
         
-        # if debug == True:
-        #     mkv  = [mkv1,mkv2,mkv3,mkv4]
-        #     mkh1 = [mkh1_2,mkh2_2,mkh3_2,mkh4_2]
-        #     mkh2 = [mkh2_1,mkh3_1,mkh4_1,mkh5_1]
+        if debug == True:
+            mkv  = [mkv1,mkv2,mkv3,mkv4]
+            mkh1 = [mkh1_2,mkh2_2,mkh3_2,mkh4_2]
+            mkh2 = [mkh2_1,mkh3_1,mkh4_1,mkh5_1]
 
-        #     ans = []
-        #     ans_format = ['A','B','C','D','E','F','G','H']
-        #     n=0
-        #     num_choice = 120
+            ans = []
+            ans_format = ['A','B','C','D','E','F','G','H']
+            n=0
+            num_choice = 120
 
-        #     if num_choice%10!=0:
-        #         loop = num_choice/10 +1
-        #     else:
-        #         loop = num_choice/10
+            if num_choice%10!=0:
+                loop = num_choice/10 +1
+            else:
+                loop = num_choice/10
 
-        #     count = 0
-        #     for l in range(int(loop)):
+            count = 0
+            for l in range(int(loop)):
 
-        #         spv = int(round((mkv[(l%3)+1] - mkv[l%3])/10.0))
-        #         mkvs = int(round(mkv[l%3] + spv/2.0))
+                spv = int(round((mkv[(l%3)+1] - mkv[l%3])/10.0))
+                mkvs = int(round(mkv[l%3] + spv/2.0))
 
-        #         l1 = int(l/3)
-        #         sph = int(round((mkh2[l1]-mkh1[l1])/ 10.0))
-        #         mkhs = int(mkh1[l1]+sph)
+                l1 = int(l/3)
+                sph = int(round((mkh2[l1]-mkh1[l1])/ 10.0))
+                mkhs = int(mkh1[l1]+sph)
                 
-        #         for r in range(10):
-        #             for row in range(8):
-        #                 mask = np.zeros(table_ans.shape[:2], np.uint8)
-        #                 pixel_v = 5
-        #                 pixel_h = 1
+                for r in range(10):
+                    for row in range(8):
+                        mask = np.zeros(table_ans.shape[:2], np.uint8)
+                        pixel_v = 5
+                        pixel_h = 1
 
-        #                 y_start = mkvs+(spv*r)+pixel_v
-        #                 y_end = mkvs+spv+(spv*r)-pixel_v
+                        y_start = mkvs+(spv*r)+pixel_v
+                        y_end = mkvs+spv+(spv*r)-pixel_v
 
-        #                 x_start = mkhs+(sph*row)
-        #                 x_end = mkhs+sph+(sph*row)-pixel_h
+                        x_start = mkhs+(sph*row)
+                        x_end = mkhs+sph+(sph*row)-pixel_h
 
-        #                 mask[y_start:y_end, x_start:x_end] = 255
+                        mask[y_start:y_end, x_start:x_end] = 255
 
-        #                 true_pix, hist_mask = get_true_pix(thresh, mask)
-        #                 if true_pix >= true_pix_check :
-        #                     if n == 0 :
-        #                         ans.append([])
-        #                         ans[r+(l*10)].append(r+(l*10)+1)
-        #                         n+=1
-        #                     ans[r+(l*10)].append(ans_format[row])
-        #                     true_pix = np.around(true_pix,2)
-        #                     cv2.putText(table_ans, str(true_pix[0]), (x_start,y_start-3), cv2.FONT_HERSHEY_SIMPLEX, 0.2, (0,0,255), 1)
-        #                     cv2.rectangle(table_ans,(x_start,y_start),(x_end,y_end),(0,0,255),1)
-        #                     count = count +1
-        #                 else :
-        #                     true_pix = np.round(true_pix,2)
-        #                     cv2.putText(table_ans, str(true_pix[0]), (x_start,y_start-3), cv2.FONT_HERSHEY_SIMPLEX, 0.2, (0,0,255), 1)
-        #                     cv2.rectangle(table_ans,(x_start,y_start),(x_end,y_end),(0,255,0),1)
-        #             if count == 0 :
-        #                 ans.append([])
-        #                 ans[r+(l*10)].append(r+(l*10)+1)
-        #                 ans[r+(l*10)].append("n")
-        #             count = 0
-        #             n=0
+                        true_pix, hist_mask = get_true_pix(thresh, mask)
+                        if true_pix >= true_pix_check :
+                            if n == 0 :
+                                ans.append([])
+                                ans[r+(l*10)].append(r+(l*10)+1)
+                                n+=1
+                            ans[r+(l*10)].append(ans_format[row])
+                            true_pix = np.around(true_pix,2)
+                            cv2.putText(table_ans, str(true_pix[0]), (x_start,y_start-3), cv2.FONT_HERSHEY_SIMPLEX, 0.2, (0,0,255), 1)
+                            cv2.rectangle(table_ans,(x_start,y_start),(x_end,y_end),(0,0,255),1)
+                            count = count +1
+                        else :
+                            true_pix = np.round(true_pix,2)
+                            cv2.putText(table_ans, str(true_pix[0]), (x_start,y_start-3), cv2.FONT_HERSHEY_SIMPLEX, 0.2, (0,0,255), 1)
+                            cv2.rectangle(table_ans,(x_start,y_start),(x_end,y_end),(0,255,0),1)
+                    if count == 0 :
+                        ans.append([])
+                        ans[r+(l*10)].append(r+(l*10)+1)
+                        ans[r+(l*10)].append("n")
+                    count = 0
+                    n=0
 
-        #     isExist = os.path.exists(srcpath+"table_ans_detect/")
-        #     if isExist == False:
-        #         os.mkdir(srcpath+"table_ans_detect/")
-        #     cv2.imwrite(srcpath+"table_ans_detect/table_ans_"+filename, table_ans)
+            isExist = os.path.exists(srcpath+"table_ans_detect/")
+            if isExist == False:
+                os.mkdir(srcpath+"table_ans_detect/")
+            cv2.imwrite(srcpath+"table_ans_detect/table_ans_"+filename, table_ans)
         
         ##############################################################################
         return (error, std_id, sec, seat_id, sub_id, ex_id, ans)

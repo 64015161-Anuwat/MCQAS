@@ -582,10 +582,10 @@ def examinformationUpdate(request, pk):
         return Response(serializer.data, status=status.HTTP_200_OK)
     else:
         fs = FileSystemStorage()
-        default_path = "/"+str(user.userid)+"/ans/"+str(request.data['subid'])+"/"+str(request.data['examid'])+"/answersheet/"
+        default_path = "/"+str(user.userid)+"/ans/"+str(exam.subid.subid)+"/"+str(request.data['examid'])+"/answersheet/"
         ori_path = fs.path('')+default_path+"original/"
         pre_path = fs.path('')+default_path+"preprocess/"
-        pre_path_ = "/"+str(user.userid)+"/ans/"+str(request.data['subid'])+"/"+str(request.data['examid'])+"/answersheet/"+"preprocess/"
+        pre_path_ = "/"+str(user.userid)+"/ans/"+str(exam.subid.subid)+"/"+str(request.data['examid'])+"/answersheet/"+"preprocess/"
         os.makedirs(ori_path, exist_ok=True)
 
         examinfo = {
@@ -608,9 +608,9 @@ def examinformationUpdate(request, pk):
         }
         if file.name.lower().endswith('.jpg') or file.name.lower().endswith('.jpeg'):
             old_img = examinformation.imgansstd_path.split("/")[-1]
-            if os.path.exists(ori_path):
+            if os.path.exists(ori_path+old_img):
                 os.remove(ori_path+old_img)
-            if os.path.exists(pre_path):
+            if os.path.exists(pre_path+"pre_"+old_img):
                 os.remove(pre_path+"pre_"+old_img)
             fs.save(ori_path+file.name, file)
             img_link = request.build_absolute_uri("/media"+default_path+"original/"+file.name)
@@ -618,7 +618,7 @@ def examinformationUpdate(request, pk):
             examinfo['imgansstd_path'] = img_link
 
             if pre == True:
-                data = process_ans(pre_path, "pre_"+file.name, 120)
+                data = process_ans(pre_path, "pre_"+file.name, 120, True)
                 # chk_validate_ans return [check, std_id, sec, seat_id, sub_id, ex_id, answer]
                 valid = chk_validate_ans(data[1], data[2], data[3], data[4], data[5], data[6])
                 error_valid = ''
@@ -632,17 +632,20 @@ def examinformationUpdate(request, pk):
                 examinfo['anschoicestd'] = valid[6]
 
                 if error_valid == '':
-                    csv_path = fs.path('')+"/"+str(user.userid)+"/ans/"+str(request.data['subid'])+"/"+str(request.data['examid'])+"/student_list/student_list.csv"
+                    csv_path = fs.path('')+"/"+str(user.userid)+"/ans/"+str(exam.subid.subid)+"/"+str(request.data['examid'])+"/student_list/student_list.csv"
                     df = pd.read_csv(csv_path)
                     df['รหัสนักศึกษา'] = df['รหัสนักศึกษา'].astype(str)
                     index = df[df['รหัสนักศึกษา'] == valid[1]].index
                     err_std = "ไม่พบรหัสนักศึกษาในรายชื่อ" if index.empty else ''
                     examinfo['stdemail'] = df['email'][index[0]] if not index.empty else None
 
-                    queryset = Examanswers.objects.get(examid=request.data['examid'], examnoanswers=valid[5])
-                    examanswers_serializer = ExamanswersSerializer(queryset, many=False)
+                    try:
+                        queryset = Examanswers.objects.get(examid=request.data['examid'], examnoanswers=valid[5])
+                        examanswers_serializer = ExamanswersSerializer(queryset, many=False)
+                    except Examanswers.DoesNotExist:
+                        examanswers_serializer = None
                     
-                    if examanswers_serializer.data['examanswersid'] != '':
+                    if examanswers_serializer != None:
                         # chk_ans return [error, ans, chans, max_score, score, right, wrong, rightperchoice, notans, analys]
                         ans = chk_ans(valid[6], exam.numberofexams, examanswers_serializer.data['choiceanswers'], examanswers_serializer.data['scoringcriteria'])
                         examinfo['score'] = ans[4]
@@ -689,10 +692,10 @@ def examinformationUploadPaper(request):
     user = User.objects.get(userid=request.data['userid'])
     exam = Exam.objects.get(examid=request.data['examid'])
     fs = FileSystemStorage()
-    default_path = "/"+str(user.userid)+"/ans/"+str(request.data['subid'])+"/"+str(request.data['examid'])+"/answersheet/"
+    default_path = "/"+str(user.userid)+"/ans/"+str(exam.subid.subid)+"/"+str(request.data['examid'])+"/answersheet/"
     ori_path = fs.path('')+default_path+"original/"
     pre_path = fs.path('')+default_path+"preprocess/"
-    pre_path_ = "/"+str(user.userid)+"/ans/"+str(request.data['subid'])+"/"+str(request.data['examid'])+"/answersheet/"+"preprocess/"
+    pre_path_ = "/"+str(user.userid)+"/ans/"+str(exam.subid.subid)+"/"+str(request.data['examid'])+"/answersheet/"+"preprocess/"
     os.makedirs(ori_path, exist_ok=True)
 
     for file in request.FILES.getlist('file'):
@@ -720,17 +723,20 @@ def examinformationUploadPaper(request):
                 examinfo['anschoicestd'] = valid[6]
 
                 if error_valid == '':
-                    csv_path = fs.path('')+"/"+str(user.userid)+"/ans/"+str(request.data['subid'])+"/"+str(request.data['examid'])+"/student_list/student_list.csv"
+                    csv_path = fs.path('')+"/"+str(user.userid)+"/ans/"+str(exam.subid.subid)+"/"+str(request.data['examid'])+"/student_list/student_list.csv"
                     df = pd.read_csv(csv_path)
                     df['รหัสนักศึกษา'] = df['รหัสนักศึกษา'].astype(str)
                     index = df[df['รหัสนักศึกษา'] == valid[1]].index
                     err_std = "ไม่พบรหัสนักศึกษาในรายชื่อ" if index.empty else ''
                     examinfo['stdemail'] = df['email'][index[0]] if not index.empty else None
 
-                    queryset = Examanswers.objects.get(examid=request.data['examid'], examnoanswers=valid[5])
-                    examanswers_serializer = ExamanswersSerializer(queryset, many=False)
+                    try:
+                        queryset = Examanswers.objects.get(examid=request.data['examid'], examnoanswers=valid[5])
+                        examanswers_serializer = ExamanswersSerializer(queryset, many=False)
+                    except Examanswers.DoesNotExist:
+                        examanswers_serializer = None
                     
-                    if examanswers_serializer.data['examanswersid'] != '':
+                    if examanswers_serializer != None:
                         # chk_ans return [error, ans, chans, max_score, score, right, wrong, rightperchoice, notans, analys]
                         ans = chk_ans(valid[6], exam.numberofexams, examanswers_serializer.data['choiceanswers'], examanswers_serializer.data['scoringcriteria'])
                         examinfo['score'] = ans[4]
