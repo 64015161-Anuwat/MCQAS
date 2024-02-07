@@ -368,7 +368,7 @@ def examUploadCSV(request):
     if file.name.endswith('.csv'):
         exam = Exam.objects.get(examid=request.data['examid'])
         fs = FileSystemStorage()
-        media = "/"+str(user.fullname)+"/ans/"+str(exam.subid.subid)+"/"+str(exam.examid)+"/student_list/"
+        media = "/"+str(user.userid)+"/ans/"+str(exam.subid.subid)+"/"+str(exam.examid)+"/student_list/"
         media_path = fs.path('')+media
         os.makedirs(media_path, exist_ok=True)
         for filename in os.listdir(media_path):
@@ -394,7 +394,7 @@ def examUploadLogo(request):
     if file.name.lower().endswith('.jpg') or file.name.lower().endswith('.jpeg'):
         exam = Exam.objects.get(examid=request.data['examid'])
         fs = FileSystemStorage()
-        media = "/"+str(user.fullname)+"/ans/"+str(exam.subid.subid)+"/"+str(exam.examid)+"/answersheet_format/"
+        media = "/"+str(user.userid)+"/ans/"+str(exam.subid.subid)+"/"+str(exam.examid)+"/answersheet_format/"
         media_path = fs.path('')+media
         os.makedirs(media_path, exist_ok=True)
         for filename in os.listdir(media_path):
@@ -486,7 +486,7 @@ def examanswersUploadPaper(request):
     if file.name.lower().endswith('.jpg') or file.name.lower().endswith('.jpeg'):
         answers_ = ''
         fs = FileSystemStorage()
-        media = "/"+str(user.fullname)+"/ans/temp/"
+        media = "/"+str(user.userid)+"/ans/temp/"
         media_path = fs.path('')+media
         original_path = media_path+"original/"
         os.makedirs(original_path, exist_ok=True)
@@ -582,10 +582,10 @@ def examinformationUpdate(request, pk):
         return Response(serializer.data, status=status.HTTP_200_OK)
     else:
         fs = FileSystemStorage()
-        default_path = "/"+str(user.fullname)+"/ans/"+str(request.data['subid'])+"/"+str(request.data['examid'])+"/answersheet/"
+        default_path = "/"+str(user.userid)+"/ans/"+str(request.data['subid'])+"/"+str(request.data['examid'])+"/answersheet/"
         ori_path = fs.path('')+default_path+"original/"
         pre_path = fs.path('')+default_path+"preprocess/"
-        pre_path_ = "/"+str(user.fullname)+"/ans/"+str(request.data['subid'])+"/"+str(request.data['examid'])+"/answersheet/"+"preprocess/"
+        pre_path_ = "/"+str(user.userid)+"/ans/"+str(request.data['subid'])+"/"+str(request.data['examid'])+"/answersheet/"+"preprocess/"
         os.makedirs(ori_path, exist_ok=True)
 
         examinfo = {
@@ -632,7 +632,7 @@ def examinformationUpdate(request, pk):
                 examinfo['anschoicestd'] = valid[6]
 
                 if error_valid == '':
-                    csv_path = fs.path('')+"/"+str(user.fullname)+"/ans/"+str(request.data['subid'])+"/"+str(request.data['examid'])+"/student_list/student_list.csv"
+                    csv_path = fs.path('')+"/"+str(user.userid)+"/ans/"+str(request.data['subid'])+"/"+str(request.data['examid'])+"/student_list/student_list.csv"
                     df = pd.read_csv(csv_path)
                     df['รหัสนักศึกษา'] = df['รหัสนักศึกษา'].astype(str)
                     index = df[df['รหัสนักศึกษา'] == valid[1]].index
@@ -689,10 +689,10 @@ def examinformationUploadPaper(request):
     user = User.objects.get(userid=request.data['userid'])
     exam = Exam.objects.get(examid=request.data['examid'])
     fs = FileSystemStorage()
-    default_path = "/"+str(user.fullname)+"/ans/"+str(request.data['subid'])+"/"+str(request.data['examid'])+"/answersheet/"
+    default_path = "/"+str(user.userid)+"/ans/"+str(request.data['subid'])+"/"+str(request.data['examid'])+"/answersheet/"
     ori_path = fs.path('')+default_path+"original/"
     pre_path = fs.path('')+default_path+"preprocess/"
-    pre_path_ = "/"+str(user.fullname)+"/ans/"+str(request.data['subid'])+"/"+str(request.data['examid'])+"/answersheet/"+"preprocess/"
+    pre_path_ = "/"+str(user.userid)+"/ans/"+str(request.data['subid'])+"/"+str(request.data['examid'])+"/answersheet/"+"preprocess/"
     os.makedirs(ori_path, exist_ok=True)
 
     for file in request.FILES.getlist('file'):
@@ -720,7 +720,7 @@ def examinformationUploadPaper(request):
                 examinfo['anschoicestd'] = valid[6]
 
                 if error_valid == '':
-                    csv_path = fs.path('')+"/"+str(user.fullname)+"/ans/"+str(request.data['subid'])+"/"+str(request.data['examid'])+"/student_list/student_list.csv"
+                    csv_path = fs.path('')+"/"+str(user.userid)+"/ans/"+str(request.data['subid'])+"/"+str(request.data['examid'])+"/student_list/student_list.csv"
                     df = pd.read_csv(csv_path)
                     df['รหัสนักศึกษา'] = df['รหัสนักศึกษา'].astype(str)
                     index = df[df['รหัสนักศึกษา'] == valid[1]].index
@@ -953,7 +953,7 @@ def quesheetCreate(request):
         else:
             return Response({"err" : quetopicdetails_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         fs = FileSystemStorage()
-        media = "/"+str(user.fullname)+"/qtn/"+str(quesheet_serializer.data['quesheetid'])+"/original_sheet/"
+        media = "/"+str(user.userid)+"/qtn/"+str(quesheet_serializer.data['quesheetid'])+"/original_sheet/"
         media_path = fs.path('')+media
         os.makedirs(media_path, exist_ok=True)
         for filename in os.listdir(media_path):
@@ -1010,7 +1010,7 @@ def quesheetUpdate(request, pk):
                 if quetopicdetails_serializer.is_valid():
                     quetopicdetails_serializer.save()
                     fs = FileSystemStorage()
-                    media = "/"+str(user.fullname)+"/qtn/"+str(quesheet_serializer.data['quesheetid'])+"/original_sheet/"
+                    media = "/"+str(user.userid)+"/qtn/"+str(quesheet_serializer.data['quesheetid'])+"/original_sheet/"
                     media_path = fs.path('')+media
                     logo_path = media_path+"logo.jpg"
                     qrcode_path = media_path+"qrcode.jpg"
@@ -1184,7 +1184,7 @@ def queinformationUpdate(request, pk):
                     p1_answer_format.append("p1"+str(c+1)+str(cc))
 
         fs = FileSystemStorage()
-        default_path = "/"+str(user.fullname)+"/qtn/"+str(request.data['quesheetid'])+"/"
+        default_path = "/"+str(user.userid)+"/qtn/"+str(request.data['quesheetid'])+"/"
         ori_path = fs.path('')+default_path+"questionnaire/original/"
         pre_path = fs.path('')+default_path+"questionnaire/preprocess/"
         os.makedirs(ori_path, exist_ok=True)
@@ -1295,7 +1295,7 @@ def queinformationUploadPaper(request):
                 p1_answer_format.append("p1"+str(c+1)+str(cc))
                 
     fs = FileSystemStorage()
-    default_path = "/"+str(user.fullname)+"/qtn/"+str(request.data['quesheetid'])+"/"
+    default_path = "/"+str(user.userid)+"/qtn/"+str(request.data['quesheetid'])+"/"
     ori_path = fs.path('')+default_path+"questionnaire/original/"
     pre_path = fs.path('')+default_path+"questionnaire/preprocess/"
     os.makedirs(ori_path, exist_ok=True)
@@ -1403,11 +1403,11 @@ def requestCreate(request):
     user = User.objects.get(userid=request.data['userid'])
     file = request.FILES['file']
     fs = FileSystemStorage()
-    media_path = fs.path('')+"/"+str(user.fullname)+"/request/"
+    media_path = fs.path('')+"/"+str(user.userid)+"/request/"
     os.makedirs(media_path, exist_ok=True)
     fs.save(media_path+"request.jpg", file)
     data = request.data
-    data['imgrequest_path'] = request.build_absolute_uri("/media/"+str(user.fullname)+"/request/request.jpg")
+    data['imgrequest_path'] = request.build_absolute_uri("/media/"+str(user.userid)+"/request/request.jpg")
     data['status_request'] = "1"
     serializer = RequestSerializer(data=request.data)
     if serializer.is_valid():
