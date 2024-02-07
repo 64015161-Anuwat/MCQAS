@@ -517,6 +517,7 @@ def process_ans(srcpath, filename, num_choice, debug=False):
                 else:
                     loop = num_choice/10
 
+                num_ch = 0
                 count = 0
                 for l in range(int(loop)):
                     spv = int(round((mkv[(l%3)+1] - mkv[l%3])/10.0))
@@ -527,6 +528,7 @@ def process_ans(srcpath, filename, num_choice, debug=False):
                     mkhs = int(mkh1[l1]+sph)
 
                     for r in range(10):
+                        num_ch += 1
                         for row in range(8):
                             mask = np.zeros(table_ans.shape[:2], np.uint8)
                             pixel_v = 5
@@ -544,16 +546,18 @@ def process_ans(srcpath, filename, num_choice, debug=False):
                             if true_pix >= true_pix_check :
                                 if n == 0 :
                                     ans.append([])
-                                    ans[r+(l*10)].append(r+(l*10)+1)
+                                    ans[num_ch-1].append(num_ch)
                                     n+=1
-                                ans[r+(l*10)].append(ans_format[row])
+                                ans[num_ch-1].append(ans_format[row])
                                 count = count +1
                         if count == 0 :
                             ans.append([])
-                            ans[r+(l*10)].append(r+(l*10)+1)
-                            ans[r+(l*10)].append("n")
+                            ans[num_ch-1].append(num_ch)
+                            ans[num_ch-1].append("n")
                         count = 0
                         n=0
+                        if num_choice == num_ch : break
+                    if num_choice == num_ch : break
         
         if table_std is None : error_table_std = "ไม่พบตารางรหัสนักศึกษา"
         if table_sub is None : error_table_sub = "ไม่พบตารางรหัสวิชา"
@@ -563,20 +567,14 @@ def process_ans(srcpath, filename, num_choice, debug=False):
         ##############################################################################
         
         if debug == True:
-            mkv  = [mkv1,mkv2,mkv3,mkv4]
-            mkh1 = [mkh1_2,mkh2_2,mkh3_2,mkh4_2]
-            mkh2 = [mkh2_1,mkh3_1,mkh4_1,mkh5_1]
-
-            ans = []
-            ans_format = ['A','B','C','D','E','F','G','H']
             n=0
-            num_choice = 120
 
             if num_choice%10!=0:
                 loop = num_choice/10 +1
             else:
                 loop = num_choice/10
 
+            num_ch = 0
             count = 0
             for l in range(int(loop)):
 
@@ -588,6 +586,7 @@ def process_ans(srcpath, filename, num_choice, debug=False):
                 mkhs = int(mkh1[l1]+sph)
                 
                 for r in range(10):
+                    num_ch += 1
                     for row in range(8):
                         mask = np.zeros(table_ans.shape[:2], np.uint8)
                         pixel_v = 5
@@ -603,11 +602,6 @@ def process_ans(srcpath, filename, num_choice, debug=False):
 
                         true_pix, hist_mask = get_true_pix(thresh, mask)
                         if true_pix >= true_pix_check :
-                            if n == 0 :
-                                ans.append([])
-                                ans[r+(l*10)].append(r+(l*10)+1)
-                                n+=1
-                            ans[r+(l*10)].append(ans_format[row])
                             true_pix = np.around(true_pix,2)
                             cv2.putText(table_ans, str(true_pix[0]), (x_start,y_start-3), cv2.FONT_HERSHEY_SIMPLEX, 0.2, (0,0,255), 1)
                             cv2.rectangle(table_ans,(x_start,y_start),(x_end,y_end),(0,0,255),1)
@@ -616,12 +610,10 @@ def process_ans(srcpath, filename, num_choice, debug=False):
                             true_pix = np.round(true_pix,2)
                             cv2.putText(table_ans, str(true_pix[0]), (x_start,y_start-3), cv2.FONT_HERSHEY_SIMPLEX, 0.2, (0,0,255), 1)
                             cv2.rectangle(table_ans,(x_start,y_start),(x_end,y_end),(0,255,0),1)
-                    if count == 0 :
-                        ans.append([])
-                        ans[r+(l*10)].append(r+(l*10)+1)
-                        ans[r+(l*10)].append("n")
                     count = 0
                     n=0
+                    if num_choice == num_ch : break
+                if num_choice == num_ch : break
 
             isExist = os.path.exists(srcpath+"table_ans_detect/")
             if isExist == False:

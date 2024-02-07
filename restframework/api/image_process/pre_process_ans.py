@@ -20,7 +20,7 @@ def pre_process_ans(srcpath, dstpath, filename):
         thresh, th = cv2.threshold(gray_img, 200, 255, cv2.THRESH_BINARY_INV)
         kernel = np.ones((5, 5), np.uint8)
         th = cv2.morphologyEx(th, cv2.MORPH_OPEN, kernel, iterations=2)
-
+        th = cv2.morphologyEx(th, cv2.MORPH_CLOSE, kernel, iterations=2)
         # blurred = cv2.GaussianBlur(gray_img, (5, 5), 0)
         # edged = cv2.Canny(blurred, 30, 100)
         height, width, ch = img.shape

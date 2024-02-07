@@ -483,6 +483,7 @@ def examanswersDelete(request, pk):
 def examanswersUploadPaper(request):
     file = request.FILES['file']
     user = User.objects.get(userid=request.data['userid'])
+    exam = Exam.objects.get(examid=request.data['examid'])
     if file.name.lower().endswith('.jpg') or file.name.lower().endswith('.jpeg'):
         answers_ = ''
         fs = FileSystemStorage()
@@ -496,23 +497,19 @@ def examanswersUploadPaper(request):
         os.makedirs(preprocess_path, exist_ok=True)
         pre = pre_process_ans(original_path, preprocess_path, file.name)
         if pre == True:
-            data = process_ans(preprocess_path, "pre_"+file.name, 120)
+            data = process_ans(preprocess_path, "pre_"+file.name, exam.numberofexams, True)
             err = ''
             for i in range(0, len(data[0])):
                 if data[0][i] != None:
                     err += str(data[1][i])+"\n"
             if err == '':
-                not_n = True
                 for i in range(0, len(data[6])):
-                    if i != 0 and not_n: answers_ += ','
+                    if i != 0: answers_ += ','
                     for ii in range(1, len(data[6][i])):
-                        if ii == 1 and data[6][i][ii] != 'n' and data[6][i][ii] != 'N':
+                        if ii == 1:
                             answers_ += str(data[6][i][ii])
-                            not_n = True
-                        elif ii != 1 and data[6][i][ii] != 'n' and data[6][i][ii] != 'N':
+                        elif ii != 1:
                             answers_ += ':'+str(data[6][i][ii])
-                            not_n = True
-                        else: not_n = False
                 if answers_ == '': return Response({"err" : "ไม่พบคำตอบข้อสอบ"}, status=status.HTTP_400_BAD_REQUEST)
                 if answers_[-1] == ',': answers_ = answers_[:-1]
                 return Response({
@@ -618,7 +615,7 @@ def examinformationUpdate(request, pk):
             examinfo['imgansstd_path'] = img_link
 
             if pre == True:
-                data = process_ans(pre_path, "pre_"+file.name, 120, True)
+                data = process_ans(pre_path, "pre_"+file.name, exam.numberofexams, True)
                 # chk_validate_ans return [check, std_id, sec, seat_id, sub_id, ex_id, answer]
                 valid = chk_validate_ans(data[1], data[2], data[3], data[4], data[5], data[6])
                 error_valid = ''
@@ -709,7 +706,7 @@ def examinformationUploadPaper(request):
             examinfo['imgansstd_path'] = img_link
 
             if pre == True:
-                data = process_ans(pre_path, "pre_"+file.name, exam.numberofexams)
+                data = process_ans(pre_path, "pre_"+file.name, exam.numberofexams, True)
                 # chk_validate_ans return [check, std_id, sec, seat_id, sub_id, ex_id, answer]
                 valid = chk_validate_ans(data[1], data[2], data[3], data[4], data[5], data[6])
                 error_valid = ''
@@ -767,7 +764,8 @@ def examinformationUploadPaper(request):
         if examinfo_serializer.is_valid():
             examinfo_serializer.save()
         res.append(examinfo_serializer.data)
-    return Response(res, status=status.HTTP_201_CREATED)
+    res_dict = {"result" : res}
+    return Response(res_dict, status=status.HTTP_201_CREATED)
 
 ##########################################################################################
 #- chapter
