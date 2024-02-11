@@ -23,7 +23,8 @@ from .image_process.create_questionnaire_sheet import *
 from .image_process.pre_process_qtn import *
 from .image_process.process_qtn import *
 from .image_process.chk_validate_qtn import *
-from datetime import timedelta
+
+from .tasks import update_data_task
 
 @api_view(['GET'])
 def overview(request):
@@ -153,27 +154,15 @@ def overview(request):
 #- Method
 def setDatetime(day):
     datetime_ = datetime.now() + timedelta(days=day)
-    datetime_ = datetime_.replace(hour=23, minute=59, second=0)
-    datetime_ = datetime.strftime(datetime_, "%Y-%m-%dT%H:%M:%SZ")
+    datetime_ = datetime_.replace(hour=23, minute=59, second=59)
+    datetime_ = datetime.strftime(datetime_, "%Y-%m-%dT%H:%M:%S+07:00")
     return datetime_
 
 ##########################################################################################
 #- Update
 @api_view(['PUT'])
 def update(request):
-    current_time = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
-    subject = Subject.objects.filter(deletetimesubject__lt=current_time)
-    for sub in subject:
-        sub.statussubject = '0'
-        sub.save()
-    exam = Exam.objects.filter(deletetimeexam__lt=current_time)
-    for ex in exam:
-        ex.statusexam = '0'
-        ex.save()
-    quesheet = Quesheet.objects.filter(deletetimequesheet__lt=current_time)
-    for qtn in quesheet:
-        qtn.statusquesheet = '0'
-        qtn.save()
+    update_data_task()
     return Response({"msg" : "อัปเดตสำเร็จ"}, status=status.HTTP_200_OK)
 ##########################################################################################
 #- User
@@ -203,7 +192,7 @@ def userCreate(request):
     salt, hashed_password = hash_password(data['password'])
     data['password'] = hashed_password
     data['salt'] = salt
-    data['createtimeuser'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    data['createtimeuser'] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S+07:00")
     serializer = UserSerializer(data=data)
     if serializer.is_valid():
         serializer.save()
@@ -329,8 +318,8 @@ def examCreate(request):
     data['imganswersheetformat_path'] = request.build_absolute_uri("/media/original_answersheet/")
     data['statusexam'] = '1'
     data['deletetimeexam'] = None
-    data['createtimeexam'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    exam = Exam.objects.filter(subid=data['subid'])
+    data['createtimeexam'] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S+07:00")
+    exam = Exam.objects.filter(subid=data['subid'], statusexam='1')
     user = User.objects.get(userid=data['userid'])
     if exam.count() < user.typesid.limitexam:
         serializer = ExamSerializer(data=data)
@@ -572,8 +561,8 @@ def examinformationUpdate(request, pk):
     examinformation = Examinformation.objects.get(examinfoid=pk)
     file = request.FILES['file'] if 'file' in request.FILES else None
     if file == None:
-        examinformation_update = json.loads(request.data['examinformation'])
-        serializer = ExaminformationSerializer(instance=examinformation, data=examinformation_update)
+        data = request.data
+        serializer = ExaminformationSerializer(instance=examinformation, data=data)
         if serializer.is_valid():
             serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -759,7 +748,7 @@ def examinformationUploadPaper(request):
         else:
             examinfo['errorstype'] = "สกุลไฟล์ไม่ถูกต้อง กรุณาเลือกไฟล์ .jpg"
 
-        examinfo['createtimeexaminfo'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        examinfo['createtimeexaminfo'] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S+07:00")
         examinfo_serializer = ExaminformationSerializer(data=examinfo)
         if examinfo_serializer.is_valid():
             examinfo_serializer.save()
@@ -918,70 +907,74 @@ def quesheetDetailByUserid(request, pk):
 @api_view(['POST'])
 def quesheetCreate(request):
     user = User.objects.get(userid=request.data['userid'])
-    data = request.data
-    quesheet_data = json.loads(data['quesheet'])
-    queheaddetails_data = json.loads(data['queheaddetails'])
-    quetopicdetails_data = json.loads(data['quetopicdetails'])
-    head_1 = quesheet_data['quesheettopicname']
-    detail_1 = quesheet_data['detailslineone']
-    detail_2 = quesheet_data['detailslinetwo']
-    part_1 = [queheaddetails_data['quehead1'].split(','), 
-              queheaddetails_data['quehead2'].split(','), 
-              queheaddetails_data['quehead3'].split(','), 
-              queheaddetails_data['quehead4'].split(','), 
-              queheaddetails_data['quehead5'].split(',')]
-    for c, i in enumerate(part_1):
-        for cc, ii in enumerate(i):
-            if ii == 'อื่นๆ': part_1[c][cc] += '__________'
-    part_2 = chk_part_2_qtn(quetopicdetails_data['quetopicdetails'], quetopicdetails_data['quetopicformat'])
-    if part_2[0] != False:
-        quesheet_data['statusquesheet'] = '1'
-        quesheet_data['createtimequesheet'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        quesheet_serializer = QuesheetSerializer(data=quesheet_data)
-        if quesheet_serializer.is_valid():
-            quesheet_serializer.save()
+    quesheet_userid = Quesheet.objects.filter(userid=request.data['userid'], statusquesheet='1')
+    if quesheet_userid.count() < user.typesid.limitque:
+        data = request.data
+        quesheet_data = json.loads(data['quesheet'])
+        queheaddetails_data = json.loads(data['queheaddetails'])
+        quetopicdetails_data = json.loads(data['quetopicdetails'])
+        head_1 = quesheet_data['quesheettopicname']
+        detail_1 = quesheet_data['detailslineone']
+        detail_2 = quesheet_data['detailslinetwo']
+        part_1 = [queheaddetails_data['quehead1'].split(','), 
+                queheaddetails_data['quehead2'].split(','), 
+                queheaddetails_data['quehead3'].split(','), 
+                queheaddetails_data['quehead4'].split(','), 
+                queheaddetails_data['quehead5'].split(',')]
+        for c, i in enumerate(part_1):
+            for cc, ii in enumerate(i):
+                if ii == 'อื่นๆ': part_1[c][cc] += '__________'
+        part_2 = chk_part_2_qtn(quetopicdetails_data['quetopicdetails'], quetopicdetails_data['quetopicformat'])
+        if part_2[0] != False:
+            quesheet_data['statusquesheet'] = '1'
+            quesheet_data['createtimequesheet'] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S+07:00")
+            quesheet_serializer = QuesheetSerializer(data=quesheet_data)
+            if quesheet_serializer.is_valid():
+                quesheet_serializer.save()
+            else:
+                return Response({"err" : quesheet_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+            queheaddetails_data['quesheetid'] = quesheet_serializer.data['quesheetid']
+            queheaddetails_serializer = QueheaddetailsSerializer(data=queheaddetails_data)
+            if queheaddetails_serializer.is_valid():
+                queheaddetails_serializer.save()
+            else:
+                return Response({"err" : queheaddetails_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+            quetopicdetails_data['quesheetid'] = quesheet_serializer.data['quesheetid']
+            quetopicdetails_serializer = QuetopicdetailsSerializer(data=quetopicdetails_data)
+            if quetopicdetails_serializer.is_valid():
+                quetopicdetails_serializer.save()
+            else:
+                return Response({"err" : quetopicdetails_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            fs = FileSystemStorage()
+            media = "/"+str(user.userid)+"/qtn/"+str(quesheet_serializer.data['quesheetid'])+"/original_sheet/"
+            media_path = fs.path('')+media
+            os.makedirs(media_path, exist_ok=True)
+            for filename in os.listdir(media_path):
+                if os.path.isfile(os.path.join(media_path, filename)):
+                    os.remove(os.path.join(media_path, filename))
+            qrcode_path = create_qrcode(media_path, "CE KMITL-"+str(quesheet_serializer.data['quesheetid']))
+            if data['logo'] != None:
+                logo_path = media_path+"logo.jpg"
+                fs.save(logo_path, data['logo'])
+                chk = create_questionnaire_sheet(media_path, head_1, detail_1, detail_2, part_1, part_2, qrcode=qrcode_path ,logo=logo_path)
+            else:
+                chk = create_questionnaire_sheet(media_path, head_1, detail_1, detail_2, part_1, part_2, qrcode=qrcode_path)
+            if chk == True:
+                link_sheet = request.build_absolute_uri("/media"+media+"questionnaire_sheet.jpg")
+                val = {"imgquesheet_path": link_sheet}
+                quesheet = Quesheet.objects.get(quesheetid=quesheet_serializer.data['quesheetid'])
+                serializer = QuesheetSerializer(instance=quesheet, data=val)
+                if serializer.is_valid():
+                    serializer.save()
+                return Response({"msg" : "สร้างแบบสอบถามสำเร็จ", "imgquesheet_path" : link_sheet}, status=status.HTTP_201_CREATED)
+            else:
+                return Response({"err" : chk}, status=status.HTTP_400_BAD_REQUEST)
         else:
-            return Response({"err" : quesheet_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-        
-        queheaddetails_data['quesheetid'] = quesheet_serializer.data['quesheetid']
-        queheaddetails_serializer = QueheaddetailsSerializer(data=queheaddetails_data)
-        if queheaddetails_serializer.is_valid():
-            queheaddetails_serializer.save()
-        else:
-            return Response({"err" : queheaddetails_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-        
-        quetopicdetails_data['quesheetid'] = quesheet_serializer.data['quesheetid']
-        quetopicdetails_serializer = QuetopicdetailsSerializer(data=quetopicdetails_data)
-        if quetopicdetails_serializer.is_valid():
-            quetopicdetails_serializer.save()
-        else:
-            return Response({"err" : quetopicdetails_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-        fs = FileSystemStorage()
-        media = "/"+str(user.userid)+"/qtn/"+str(quesheet_serializer.data['quesheetid'])+"/original_sheet/"
-        media_path = fs.path('')+media
-        os.makedirs(media_path, exist_ok=True)
-        for filename in os.listdir(media_path):
-            if os.path.isfile(os.path.join(media_path, filename)):
-                os.remove(os.path.join(media_path, filename))
-        qrcode_path = create_qrcode(media_path, "CE KMITL-"+str(quesheet_serializer.data['quesheetid']))
-        if data['logo'] != None:
-            logo_path = media_path+"logo.jpg"
-            fs.save(logo_path, data['logo'])
-            chk = create_questionnaire_sheet(media_path, head_1, detail_1, detail_2, part_1, part_2, qrcode=qrcode_path ,logo=logo_path)
-        else:
-            chk = create_questionnaire_sheet(media_path, head_1, detail_1, detail_2, part_1, part_2, qrcode=qrcode_path)
-        if chk == True:
-            link_sheet = request.build_absolute_uri("/media"+media+"questionnaire_sheet.jpg")
-            val = {"imgquesheet_path": link_sheet}
-            quesheet = Quesheet.objects.get(quesheetid=quesheet_serializer.data['quesheetid'])
-            serializer = QuesheetSerializer(instance=quesheet, data=val)
-            if serializer.is_valid():
-                serializer.save()
-            return Response({"msg" : "สร้างแบบสอบถามสำเร็จ", "imgquesheet_path" : link_sheet}, status=status.HTTP_201_CREATED)
-        else:
-            return Response({"err" : chk}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"err" : part_2[1], "err_": part_2[2]}, status=status.HTTP_400_BAD_REQUEST)
     else:
-        return Response({"err" : part_2[1], "err_": part_2[2]}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"err" : "จำนวนแบบสอบถามเกินกำหนดที่สามารถสร้างได้"}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['PUT'])
 def quesheetUpdate(request, pk):
@@ -1372,7 +1365,7 @@ def queinformationUploadPaper(request):
                 queinformation_data['errorstype'] = pre
         else:
             queinformation_data['errorstype'] = "สกุลไฟล์ไม่ถูกต้อง กรุณาเลือกไฟล์ .jpg"
-        queinformation_data['createtimequesheetinfo'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        queinformation_data['createtimequesheetinfo'] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S+07:00")
         queinformation_serializer = QueinformationSerializer(data=queinformation_data)
         if queinformation_serializer.is_valid():
             queinformation_serializer.save()
@@ -1583,7 +1576,7 @@ def subjectCreate(request):
         data = request.data
         data['statussubject'] = "1"
         data['deletetimesubject'] = None
-        data['createtimesubject'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        data['createtimesubject'] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S+07:00")
         serializer = SubjectSerializer(data=data)
         if serializer.is_valid():
             serializer.save()

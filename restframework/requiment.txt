@@ -10,3 +10,7 @@ qrcode
 django-cors-headers
 imutils
 pandas
+celery
+django-celery-beat
+django-celery-result
+redis

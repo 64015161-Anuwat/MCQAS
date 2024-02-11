@@ -10,10 +10,10 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
-from math import e
 from pathlib import Path
 import environ
 import os
+from celery.schedules import crontab
 
 env = environ.Env()
 environ.Env.read_env()
@@ -45,7 +45,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'corsheaders',
     'api',
-    'rest_framework'
+    'rest_framework',
+    'django_celery_beat',
+    "django_celery_results",
 ]
 
 MIDDLEWARE = [
@@ -127,7 +129,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Bangkok'
 
 USE_I18N = True
 
@@ -157,3 +159,21 @@ DATA_UPLOAD_MAX_NUMBER_FILES = None
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
 ]
+
+# Celery
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+# CELERY_ACCEPT_CONTENT = ['application/json']
+# CELERY_RESULT_SERIALIZER = 'json'
+# CELERY_TASK_SERIALIZER = 'json'
+# CELERY_RESULT_BACKEND = 'django-db'
+CELERY_TIMEZONE = 'Asia/Bangkok'
+
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
+CELERY_BEAT_SCHEDULE = {
+    'update-task-every-day': {
+        'task': 'api.tasks.update_data_task',
+        'schedule': crontab(hour="0", minute="0"),
+    },
+}
