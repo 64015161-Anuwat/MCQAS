@@ -19,37 +19,43 @@ def pre_process_ans(srcpath, dstpath, filename):
         # thresholding image
         thresh, th = cv2.threshold(gray_img, 200, 255, cv2.THRESH_BINARY_INV)
         kernel = np.ones((5, 5), np.uint8)
-        th = cv2.morphologyEx(th, cv2.MORPH_OPEN, kernel, iterations=2)
-        th = cv2.morphologyEx(th, cv2.MORPH_CLOSE, kernel, iterations=2)
-        # blurred = cv2.GaussianBlur(gray_img, (5, 5), 0)
-        # edged = cv2.Canny(blurred, 30, 100)
-        height, width, ch = img.shape
-        
-        contours, hierarchy = cv2.findContours(th, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        for i in range(2):
+            for ii in range(2):
+                th = cv2.morphologyEx(th, cv2.MORPH_OPEN, kernel, iterations=i)
+                th = cv2.morphologyEx(th, cv2.MORPH_CLOSE, kernel, iterations=ii)
+                # blurred = cv2.GaussianBlur(gray_img, (5, 5), 0)
+                # edged = cv2.Canny(blurred, 30, 100)
+                height, width, ch = img.shape
+                
+                contours, hierarchy = cv2.findContours(th, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        largest = None
-        max_area = 0
-        for i in contours:
-            area = cv2.contourArea(i)
-            if area > max_area:
-                epsilon = 0.01 * cv2.arcLength(i, True)
-                approx = cv2.approxPolyDP(i, epsilon, True)
-                # cv2.drawContours(img, [approx], -1, (0, 255, 0), 2)
-                # plt.imshow(img, cmap='gray')
-                # plt.show()
-                if len(approx) == 4 and area > 1000.0:
-                    largest = approx
-                    max_area = area
-                    # cv2.drawContours(crop_img, [approx], -1, (0, 255, 0), 2)
-                    # cv2.imshow("", crop_img)
-                    # cv2.waitKey(1000)
+                largest = None
+                max_area = 0
+                for i in contours:
+                    area = cv2.contourArea(i)
+                    if area > max_area:
+                        epsilon = 0.01 * cv2.arcLength(i, True)
+                        approx = cv2.approxPolyDP(i, epsilon, True)
+                        # cv2.drawContours(img, [approx], -1, (0, 255, 0), 2)
+                        # plt.imshow(img, cmap='gray')
+                        # plt.show()
+                        if len(approx) == 4:
+                            largest = approx
+                            max_area = area
+                            # cv2.drawContours(crop_img, [approx], -1, (0, 255, 0), 2)
+                            # cv2.imshow("", crop_img)
+                            # cv2.waitKey(1000)
 
-        # cv2.imshow("", crop_img)
-        # cv2.waitKey(0)
-        # Reshape the largest contour to get the corner points
-        if largest is None:
-            # return "Error : Corner not found at file: "+filename
-            return "Error : ไม่พบมุมของกระดาษคำตอบที่ไฟล์: "+filename
+                # cv2.imshow("", crop_img)
+                # cv2.waitKey(0)
+                # Reshape the largest contour to get the corner points
+                if largest is None:
+                    # return "Error : Corner not found at file: "+filename
+                    return "Error : ไม่พบมุมของกระดาษคำตอบที่ไฟล์: "+filename
+                else: 
+                    break
+            if largest is not None:
+                break
         
         points = largest.reshape(4, 2)
 

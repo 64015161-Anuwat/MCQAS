@@ -496,7 +496,7 @@ def process_ans(srcpath, filename, num_choice, debug=False):
             ret, thresh = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY)
             # thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
             linek = np.ones((5,5),np.uint8)
-            thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, linek ,iterations=2)
+            thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, linek ,iterations=1)
             # cv2.imshow("0", thresh)
             # cv2.waitKey(0)
 
@@ -566,8 +566,15 @@ def process_ans(srcpath, filename, num_choice, debug=False):
         error = [error_table_std, error_table_sub, error_table_ans, error_mkv, error_mkvr, error_mkh, error_mkhb]
         ##############################################################################
         
-        if debug == True:
+        if (error_mkv is None and 
+            error_mkvr is None and 
+            error_mkh is None and 
+            error_mkhb is None) and debug == True:
             n=0
+
+            mkv  = [mkv1,mkv2,mkv3,mkv4]
+            mkh1 = [mkh1_2,mkh2_2,mkh3_2,mkh4_2]
+            mkh2 = [mkh2_1,mkh3_1,mkh4_1,mkh5_1]
 
             if num_choice%10!=0:
                 loop = num_choice/10 +1

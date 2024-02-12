@@ -490,7 +490,7 @@ def examanswersUploadPaper(request):
             err = ''
             for i in range(0, len(data[0])):
                 if data[0][i] != None:
-                    err += str(data[1][i])+"\n"
+                    err += str(data[0][i])+"\n"
             if err == '':
                 for i in range(0, len(data[6])):
                     if i != 0: answers_ += ','
