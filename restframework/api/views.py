@@ -545,16 +545,16 @@ def examinformationDetailByExamid(request, pk):
     except Examinformation.DoesNotExist:
         return Response(examinformation_notfound, status=status.HTTP_404_NOT_FOUND)
     
-    duplicate_stdid = queryset.values('stdid').annotate(name_count=Count('stdid')).filter(name_count__gt=1)
+    duplicate_stdid = queryset.values('stdid').annotate(stdid_count=Count('stdid')).filter(stdid_count__gt=1)
 
-    # Filter queryset to include only records with duplicate names
-    queryset_duplicate = queryset.filter(name__in=[item['stdid'] for item in duplicate_stdid])
+    # Filter queryset to include only records with duplicate stdid
+    queryset_duplicate = queryset.filter(stdid__in=[item['stdid'] for item in duplicate_stdid])
 
-    # Serialize data for records with duplicate names
+    # Serialize data for records with duplicate stdid
     serializer_duplicate = ExaminformationSerializer(queryset_duplicate, many=True)
 
-    # Serialize data for records without duplicate names
-    queryset_non_duplicate = queryset.exclude(name__in=[item['stdid'] for item in duplicate_stdid])
+    # Serialize data for records without duplicate stdid
+    queryset_non_duplicate = queryset.exclude(stdid__in=[item['stdid'] for item in duplicate_stdid])
     serializer_non_duplicate = ExaminformationSerializer(queryset_non_duplicate, many=True)
 
     # Return both sets of data
