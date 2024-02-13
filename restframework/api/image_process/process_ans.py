@@ -1,6 +1,5 @@
 import cv2
 import numpy as np
-import glob
 import sys, os
 
 def get_sorted_box(cont):
@@ -30,7 +29,7 @@ def get_true_pix(thresh, mask):
 
 def process_ans(srcpath, filename, num_choice, debug=False):
     try:
-        true_pix_check = 32 # percent of true pixel in mask for check answer
+        true_pix_check = 22.8
         error_table_std = None
         error_table_sub = None
         error_table_ans = None
@@ -493,9 +492,9 @@ def process_ans(srcpath, filename, num_choice, debug=False):
 
             gray = cv2.cvtColor(table_ans, cv2.COLOR_BGR2GRAY)
             gray = cv2.GaussianBlur(gray, (5, 5), 0)
-            ret, thresh = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY)
+            ret, thresh = cv2.threshold(gray, 170, 255, cv2.THRESH_BINARY)
             # thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
-            linek = np.ones((5,5),np.uint8)
+            linek = np.ones((3, 3),np.uint8)
             thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, linek ,iterations=1)
             # cv2.imshow("0", thresh)
             # cv2.waitKey(0)
@@ -504,9 +503,13 @@ def process_ans(srcpath, filename, num_choice, debug=False):
                 error_mkvr is None and 
                 error_mkh is None and 
                 error_mkhb is None):
-                mkv  = [mkv1,mkv2,mkv3,mkv4]
-                mkh1 = [mkh1_2,mkh2_2,mkh3_2,mkh4_2]
-                mkh2 = [mkh2_1,mkh3_1,mkh4_1,mkh5_1]
+                if mkv1 is not None and mkv2 is not None and mkv3 is not None and mkv4 is not None:
+                    mkv  = [mkv1,mkv2,mkv3,mkv4]
+                if mkvr1 is not None and mkvr2 is not None and mkvr3 is not None and mkvr4 is not None:
+                    mkvr = [mkvr1,mkvr2,mkvr3,mkvr4]
+                if mkh1_2 is not None and mkh2_1 is not None and mkh2_2 is not None and mkh3_1 is not None and mkh3_2 is not None and mkh4_1 is not None and mkh4_2 is not None:
+                    mkh1 = [mkh1_2,mkh2_2,mkh3_2,mkh4_2]
+                    mkh2 = [mkh2_1,mkh3_1,mkh4_1,mkh5_1]
 
                 ans = []
                 ans_format = ['A','B','C','D','E','F','G','H']
@@ -569,12 +572,9 @@ def process_ans(srcpath, filename, num_choice, debug=False):
         if (error_mkv is None and 
             error_mkvr is None and 
             error_mkh is None and 
-            error_mkhb is None) and debug == True:
+            error_mkhb is None) and debug == True and table_ans is not None:
+            num_ans = 0
             n=0
-
-            mkv  = [mkv1,mkv2,mkv3,mkv4]
-            mkh1 = [mkh1_2,mkh2_2,mkh3_2,mkh4_2]
-            mkh2 = [mkh2_1,mkh3_1,mkh4_1,mkh5_1]
 
             if num_choice%10!=0:
                 loop = num_choice/10 +1
@@ -584,7 +584,6 @@ def process_ans(srcpath, filename, num_choice, debug=False):
             num_ch = 0
             count = 0
             for l in range(int(loop)):
-
                 spv = int(round((mkv[(l%3)+1] - mkv[l%3])/10.0))
                 mkvs = int(round(mkv[l%3] + spv/2.0))
 
@@ -609,6 +608,7 @@ def process_ans(srcpath, filename, num_choice, debug=False):
 
                         true_pix, hist_mask = get_true_pix(thresh, mask)
                         if true_pix >= true_pix_check :
+                            num_ans += 1
                             true_pix = np.around(true_pix,2)
                             cv2.putText(table_ans, str(true_pix[0]), (x_start,y_start-3), cv2.FONT_HERSHEY_SIMPLEX, 0.2, (0,0,255), 1)
                             cv2.rectangle(table_ans,(x_start,y_start),(x_end,y_end),(0,0,255),1)
@@ -621,11 +621,13 @@ def process_ans(srcpath, filename, num_choice, debug=False):
                     n=0
                     if num_choice == num_ch : break
                 if num_choice == num_ch : break
+            cv2.putText(table_ans, str(num_ans), (40,40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 1)
 
             isExist = os.path.exists(srcpath+"table_ans_detect/")
             if isExist == False:
                 os.mkdir(srcpath+"table_ans_detect/")
-            cv2.imwrite(srcpath+"table_ans_detect/table_ans_"+filename, table_ans)
+            if table_ans is not None:
+                cv2.imwrite(srcpath+"table_ans_detect/table_ans_"+filename, table_ans)
         
         ##############################################################################
         return (error, std_id, sec, seat_id, sub_id, ex_id, ans)

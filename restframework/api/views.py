@@ -955,9 +955,9 @@ def quesheetCreate(request):
                 if os.path.isfile(os.path.join(media_path, filename)):
                     os.remove(os.path.join(media_path, filename))
             qrcode_path = create_qrcode(media_path, "CE KMITL-"+str(quesheet_serializer.data['quesheetid']))
-            if data['logo'] != None:
+            if 'logo' in request.FILES:
                 logo_path = media_path+"logo.jpg"
-                fs.save(logo_path, data['logo'])
+                fs.save(logo_path, request.FILES['logo'])
                 chk = create_questionnaire_sheet(media_path, head_1, detail_1, detail_2, part_1, part_2, qrcode=qrcode_path ,logo=logo_path)
             else:
                 chk = create_questionnaire_sheet(media_path, head_1, detail_1, detail_2, part_1, part_2, qrcode=qrcode_path)
@@ -979,8 +979,14 @@ def quesheetCreate(request):
 @api_view(['PUT'])
 def quesheetUpdate(request, pk):
     user = User.objects.get(userid=request.data['userid'])
-    quesheet_userid = Quesheet.objects.filter(userid=request.data['userid'])
-    if quesheet_userid.count() < user.typesid.limitque:
+    if 'deletetimequesheet' in request.data:
+        data = request.data
+        quesheet = Quesheet.objects.get(quesheetid=pk, userid=user.userid)
+        serializer = QuesheetSerializer(instance=quesheet, data=data)
+        if serializer.is_valid():
+            serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    else:
         data = request.data
         quesheet_data = json.loads(data['quesheet'])
         queheaddetails_data = json.loads(data['queheaddetails'])
@@ -994,7 +1000,7 @@ def quesheetUpdate(request, pk):
                 queheaddetails_data['quehead4'].split(','), 
                 queheaddetails_data['quehead5'].split(',')]
         part_2 = chk_part_2_qtn(quetopicdetails_data['quetopicdetails'], quetopicdetails_data['quetopicformat'])
-        quesheet = Quesheet.objects.get(quesheetid=pk)
+        quesheet = Quesheet.objects.get(quesheetid=pk, userid=user.userid)
         quesheet_serializer = QuesheetSerializer(instance=quesheet, data=quesheet_data)
         if quesheet_serializer.is_valid():
             quesheet_serializer.save()
@@ -1011,7 +1017,11 @@ def quesheetUpdate(request, pk):
                     media_path = fs.path('')+media
                     logo_path = media_path+"logo.jpg"
                     qrcode_path = media_path+"qrcode.jpg"
-                    if not os.path.exists(logo_path):
+                    if 'logo' in request.FILES:
+                        logo_path = media_path+"logo.jpg"
+                        fs.save(logo_path, request.FILES['logo'])
+                        chk = create_questionnaire_sheet(media_path, head_1, detail_1, detail_2, part_1, part_2, qrcode=qrcode_path ,logo=logo_path)
+                    elif not os.path.exists(logo_path):
                         chk = create_questionnaire_sheet(media_path, head_1, detail_1, detail_2, part_1, part_2, qrcode=qrcode_path)
                     else:
                         chk = create_questionnaire_sheet(media_path, head_1, detail_1, detail_2, part_1, part_2, qrcode=qrcode_path, logo=logo_path)
@@ -1035,10 +1045,7 @@ def quesheetUpdate(request, pk):
                 if quesheet_serializer.is_valid():
                     quesheet_serializer.save()
                 return Response({"err" : quesheet_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
         return Response(quesheet_serializer.data, status=status.HTTP_200_OK)
-    else:
-        return Response({"err" : "จำนวนแบบสอบเกินกำหนดที่สามารถสร้างได้"}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['DELETE'])
 def quesheetDelete(request, pk):

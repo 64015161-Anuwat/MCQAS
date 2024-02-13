@@ -15,6 +15,13 @@ def pre_process_ans(srcpath, dstpath, filename):
         
         # Load the img and convert to gray scale
         img = cv2.imread(srcpath+filename)
+        img = img[5:img.shape[0]-5, 5:img.shape[1]-5]
+        height, width, ch = img.shape
+        if width < height:
+            img = cv2.resize(img, (992, 1403))
+        else:
+            img = cv2.resize(img, (1403, 992))
+        height, width, ch = img.shape
         gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         # thresholding image
         thresh, th = cv2.threshold(gray_img, 200, 255, cv2.THRESH_BINARY_INV)
@@ -25,7 +32,6 @@ def pre_process_ans(srcpath, dstpath, filename):
                 th = cv2.morphologyEx(th, cv2.MORPH_CLOSE, kernel, iterations=ii)
                 # blurred = cv2.GaussianBlur(gray_img, (5, 5), 0)
                 # edged = cv2.Canny(blurred, 30, 100)
-                height, width, ch = img.shape
                 
                 contours, hierarchy = cv2.findContours(th, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
