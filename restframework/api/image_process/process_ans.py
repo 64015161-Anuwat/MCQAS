@@ -29,7 +29,7 @@ def get_true_pix(thresh, mask):
 
 def process_ans(srcpath, filename, num_choice, debug=False):
     try:
-        true_pix_check = 22.8
+        true_pix_check = 24.7
         error_table_std = None
         error_table_sub = None
         error_table_ans = None
@@ -39,8 +39,8 @@ def process_ans(srcpath, filename, num_choice, debug=False):
 
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         thresh = cv2.GaussianBlur(gray, (5, 5), 0)
-        thresh = cv2.Canny(thresh, 0, 180)
-        # ret, thresh = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY)
+        # thresh = cv2.Canny(thresh, 0, 180)
+        ret, thresh = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY_INV)
         # kernel = np.ones((5,5),np.uint8)
         # thresh = cv2.morphologyEx(thresh, cv2.MORPH_OPEN,kernel)
         # kernel1 = np.ones((2,2),np.uint8)
@@ -53,7 +53,7 @@ def process_ans(srcpath, filename, num_choice, debug=False):
         # cv2.waitKey(0)
 
         mask = np.zeros(thresh.shape[:2], np.uint8)
-        mask[20:50, 470:530] = 255
+        mask[20:60, 480:530] = 255
         masked_img2 = cv2.bitwise_and(thresh,thresh,mask = mask)
         # cv2.imshow("2", masked_img2)
         # cv2.waitKey(0)
@@ -90,7 +90,7 @@ def process_ans(srcpath, filename, num_choice, debug=False):
             if area > 100 and area < 300:
                 a_sorted, box = get_sorted_box(cont)
                 if a_sorted is not None:
-                    table_ans = img[0:height, a_sorted[0][0] :width]
+                    table_ans = img[0:height, a_sorted[0][0]:width]
 
         # if table_ans is not None: cv2.imwrite("image/test/section_3/Section_3_"+filename.split(".")[0]+".jpg", table_ans)
         
@@ -492,7 +492,7 @@ def process_ans(srcpath, filename, num_choice, debug=False):
 
             gray = cv2.cvtColor(table_ans, cv2.COLOR_BGR2GRAY)
             gray = cv2.GaussianBlur(gray, (5, 5), 0)
-            ret, thresh = cv2.threshold(gray, 170, 255, cv2.THRESH_BINARY)
+            ret, thresh = cv2.threshold(gray, 190, 255, cv2.THRESH_BINARY)
             # thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
             linek = np.ones((3, 3),np.uint8)
             thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, linek ,iterations=1)
@@ -633,8 +633,8 @@ def process_ans(srcpath, filename, num_choice, debug=False):
         return (error, std_id, sec, seat_id, sub_id, ex_id, ans)
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
-        err = "Error Line "+str(exc_tb.tb_lineno if exc_tb else None)+" : "+str(e)+" at file: "+filename
-        return (err, 0, 0, 0, 0, 0, 0)
+        err = "Process Ans Error Line "+str(exc_tb.tb_lineno if exc_tb else None)+" : "+str(e)+" at file: "+filename
+        return ([err], 0, 0, 0, 0, 0, 0)
 
 # if __name__ == '__main__':
 #     img_list = []

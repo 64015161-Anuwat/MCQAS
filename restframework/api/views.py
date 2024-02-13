@@ -10,6 +10,7 @@ from .models import *
 from .serializers import *
 
 from django.core.files.storage import FileSystemStorage
+from django.db.models import Count
 
 from .utils.hash_password import *
 
@@ -544,8 +545,26 @@ def examinformationDetailByExamid(request, pk):
     except Examinformation.DoesNotExist:
         return Response(examinformation_notfound, status=status.HTTP_404_NOT_FOUND)
     
-    serializer = ExaminformationSerializer(queryset, many=True)
-    return Response(serializer.data, status=status.HTTP_200_OK)
+    duplicate_stdid = queryset.values('stdid').annotate(name_count=Count('stdid')).filter(name_count__gt=1)
+
+    # Filter queryset to include only records with duplicate names
+    queryset_duplicate = queryset.filter(name__in=[item['stdid'] for item in duplicate_stdid])
+
+    # Serialize data for records with duplicate names
+    serializer_duplicate = ExaminformationSerializer(queryset_duplicate, many=True)
+
+    # Serialize data for records without duplicate names
+    queryset_non_duplicate = queryset.exclude(name__in=[item['stdid'] for item in duplicate_stdid])
+    serializer_non_duplicate = ExaminformationSerializer(queryset_non_duplicate, many=True)
+
+    # Return both sets of data
+    return Response({
+        'duplicate_records': serializer_duplicate.data,
+        'non_duplicate_records': serializer_non_duplicate.data
+    }, status=status.HTTP_200_OK)
+    
+    # serializer = ExaminformationSerializer(queryset, many=True)
+    # return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['POST'])
 def examinformationCreate(request):
@@ -605,19 +624,32 @@ def examinformationUpdate(request, pk):
 
             if pre == True:
                 data = process_ans(pre_path, "pre_"+file.name, exam.numberofexams, True)
-                # chk_validate_ans return [check, std_id, sec, seat_id, sub_id, ex_id, answer]
-                valid = chk_validate_ans(data[1], data[2], data[3], data[4], data[5], data[6])
-                error_valid = ''
-                error_valid = '\n'.join([error for error in valid[0] if error is not None])
-                examinfo['stdid'] = valid[1]
-                examinfo['section'] = valid[2]
-                examinfo['examseatnumber'] = valid[3]
-                examinfo['subjectidstd'] = valid[4]
-                if valid[5] == '' : valid[5] = None
-                examinfo['setexaminfo'] = valid[5]
-                examinfo['anschoicestd'] = valid[6]
+                error_data = ''
+                for i in range(0, len(data[0])):
+                    if data[0][i] != None:
+                        if error_data == '':
+                            error_data += str(data[0][i])
+                        else:
+                            error_data += ','+str(data[0][i])
+                if error_data == '':
+                    # chk_validate_ans return [check, std_id, sec, seat_id, sub_id, ex_id, answer]
+                    valid = chk_validate_ans(data[1], data[2], data[3], data[4], data[5], data[6])
+                    error_valid = ''
+                    for i in range(0, len(valid[0])):
+                        if valid[0][i] != None:
+                            if error_valid == '':
+                                error_valid += str(valid[0][i])
+                            else:
+                                error_valid += ','+str(valid[0][i])
+                    examinfo['stdid'] = valid[1]
+                    examinfo['section'] = valid[2]
+                    examinfo['examseatnumber'] = valid[3]
+                    examinfo['subjectidstd'] = valid[4]
+                    if valid[5] == '' : valid[5] = None
+                    examinfo['setexaminfo'] = valid[5]
+                    examinfo['anschoicestd'] = valid[6]
+                    examinfo['errorstype'] = error_valid if error_valid != '' else None
 
-                if error_valid == '':
                     csv_path = fs.path('')+"/"+str(user.userid)+"/ans/"+str(exam.subid.subid)+"/"+str(request.data['examid'])+"/student_list/student_list.csv"
                     df = pd.read_csv(csv_path)
                     df['รหัสนักศึกษา'] = df['รหัสนักศึกษา'].astype(str)
@@ -639,19 +671,27 @@ def examinformationUpdate(request, pk):
                         examinfo['wrong'] = ans[6]
                         examinfo['unresponsive'] = ans[8]
                         examinfo['itemanalysis'] = ans[9]
-                        if ans[0] == '' and err_std == '':
-                            examinfo['errorstype'] = None
-                        elif ans[0] != '' and err_std == '':
-                            examinfo['errorstype'] = ans[0]
-                        elif ans[0] == '' and err_std != '':
-                            examinfo['errorstype'] = err_std
-                        else :
-                            examinfo['errorstype'] = err_std+","+ans[0]
+                        if examinfo['errorstype'] == None:
+                            if ans[0] == '' and err_std == '':
+                                examinfo['errorstype'] = None
+                            elif ans[0] != '' and err_std == '':
+                                examinfo['errorstype'] = ans[0]
+                            elif ans[0] == '' and err_std != '':
+                                examinfo['errorstype'] = err_std
+                            else :
+                                examinfo['errorstype'] = err_std+","+ans[0]
+                        else:
+                            if ans[0] != '' and err_std == '':
+                                examinfo['errorstype'] += ','+ans[0]
+                            elif ans[0] == '' and err_std != '':
+                                examinfo['errorstype'] += ','+err_std
+                            elif ans[0] != '' and err_std != '':
+                                examinfo['errorstype'] += ','+err_std+","+ans[0]
                     else :
                         err_set = "ไม่พบข้อมูลเฉลยข้อสอบ"
                         examinfo['errorstype'] = err_set if err_std == '' else err_set+","+err_std
                 else:
-                    examinfo['errorstype'] = error_valid
+                    examinfo['errorstype'] = error_data
             else:
                 examinfo['errorstype'] = pre
         else:
@@ -696,19 +736,32 @@ def examinformationUploadPaper(request):
 
             if pre == True:
                 data = process_ans(pre_path, "pre_"+file.name, exam.numberofexams, True)
-                # chk_validate_ans return [check, std_id, sec, seat_id, sub_id, ex_id, answer]
-                valid = chk_validate_ans(data[1], data[2], data[3], data[4], data[5], data[6])
-                error_valid = ''
-                error_valid = '\n'.join([error for error in valid[0] if error is not None])
-                examinfo['stdid'] = valid[1]
-                examinfo['section'] = valid[2]
-                examinfo['examseatnumber'] = valid[3]
-                examinfo['subjectidstd'] = valid[4]
-                if valid[5] == '' : valid[5] = None
-                examinfo['setexaminfo'] = valid[5]
-                examinfo['anschoicestd'] = valid[6]
+                error_data = ''
+                for i in range(0, len(data[0])):
+                    if data[0][i] != None:
+                        if error_data == '':
+                            error_data += str(data[0][i])
+                        else:
+                            error_data += ','+str(data[0][i])
+                if error_data == '':
+                    # chk_validate_ans return [check, std_id, sec, seat_id, sub_id, ex_id, answer]
+                    valid = chk_validate_ans(data[1], data[2], data[3], data[4], data[5], data[6])
+                    error_valid = ''
+                    for i in range(0, len(valid[0])):
+                        if valid[0][i] != None:
+                            if error_valid == '':
+                                error_valid += str(valid[0][i])
+                            else:
+                                error_valid += ','+str(valid[0][i])
+                    examinfo['stdid'] = valid[1]
+                    examinfo['section'] = valid[2]
+                    examinfo['examseatnumber'] = valid[3]
+                    examinfo['subjectidstd'] = valid[4]
+                    if valid[5] == '' : valid[5] = None
+                    examinfo['setexaminfo'] = valid[5]
+                    examinfo['anschoicestd'] = valid[6]
+                    examinfo['errorstype'] = error_valid if error_valid != '' else None
 
-                if error_valid == '':
                     csv_path = fs.path('')+"/"+str(user.userid)+"/ans/"+str(exam.subid.subid)+"/"+str(request.data['examid'])+"/student_list/student_list.csv"
                     df = pd.read_csv(csv_path)
                     df['รหัสนักศึกษา'] = df['รหัสนักศึกษา'].astype(str)
@@ -730,19 +783,27 @@ def examinformationUploadPaper(request):
                         examinfo['wrong'] = ans[6]
                         examinfo['unresponsive'] = ans[8]
                         examinfo['itemanalysis'] = ans[9]
-                        if ans[0] == '' and err_std == '':
-                            examinfo['errorstype'] = None
-                        elif ans[0] != '' and err_std == '':
-                            examinfo['errorstype'] = ans[0]
-                        elif ans[0] == '' and err_std != '':
-                            examinfo['errorstype'] = err_std
-                        else :
-                            examinfo['errorstype'] = err_std+","+ans[0]
+                        if examinfo['errorstype'] == None:
+                            if ans[0] == '' and err_std == '':
+                                examinfo['errorstype'] = None
+                            elif ans[0] != '' and err_std == '':
+                                examinfo['errorstype'] = ans[0]
+                            elif ans[0] == '' and err_std != '':
+                                examinfo['errorstype'] = err_std
+                            else :
+                                examinfo['errorstype'] = err_std+","+ans[0]
+                        else:
+                            if ans[0] != '' and err_std == '':
+                                examinfo['errorstype'] += ','+ans[0]
+                            elif ans[0] == '' and err_std != '':
+                                examinfo['errorstype'] += ','+err_std
+                            elif ans[0] != '' and err_std != '':
+                                examinfo['errorstype'] += ','+err_std+","+ans[0]
                     else :
                         err_set = "ไม่พบข้อมูลเฉลยข้อสอบ"
                         examinfo['errorstype'] = err_set if err_std == '' else err_set+","+err_std
                 else:
-                    examinfo['errorstype'] = error_valid
+                    examinfo['errorstype'] = error_data
             else:
                 examinfo['errorstype'] = pre
         else:
@@ -1070,7 +1131,7 @@ def queheaddetailsList(request):
 
 @api_view(['GET'])
 def queheaddetailsDetail(request, pk):
-    queryset = Queheaddetails.objects.get(queheaddetailsid=pk)
+    queryset = Queheaddetails.objects.get(quesheetid=pk)
     serializer = QueheaddetailsSerializer(queryset, many=False)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -1105,7 +1166,7 @@ def quetopicdetailsList(request):
 
 @api_view(['GET'])
 def quetopicdetailsDetail(request, pk):
-    queryset = Quetopicdetails.objects.get(quetopicdetailsid=pk)
+    queryset = Quetopicdetails.objects.get(quesheetid=pk)
     serializer = QuetopicdetailsSerializer(queryset, many=False)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
