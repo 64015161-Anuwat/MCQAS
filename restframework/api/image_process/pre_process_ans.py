@@ -15,14 +15,14 @@ def pre_process_ans(srcpath, dstpath, filename):
         
         # Load the img and convert to gray scale
         img = cv2.imread(srcpath+filename)
-        img = img[5:img.shape[0]-5, 5:img.shape[1]-5]
+        img = img[10:img.shape[0]-10, 10:img.shape[1]-10]
         height, width, ch = img.shape
         gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         # thresholding image
-        thresh, th = cv2.threshold(gray_img, 200, 255, cv2.THRESH_BINARY_INV)
+        thresh, th = cv2.threshold(gray_img, 150, 255, cv2.THRESH_BINARY_INV)
         kernel = np.ones((5, 5), np.uint8)
-        for i in range(2):
-            for ii in range(2):
+        for i in range(0, 2):
+            for ii in range(1, 2):
                 th = cv2.morphologyEx(th, cv2.MORPH_OPEN, kernel, iterations=i)
                 th = cv2.morphologyEx(th, cv2.MORPH_CLOSE, kernel, iterations=ii)
                 # blurred = cv2.GaussianBlur(gray_img, (5, 5), 0)
@@ -52,7 +52,7 @@ def pre_process_ans(srcpath, dstpath, filename):
                 # Reshape the largest contour to get the corner points
                 if largest is None:
                     # return "Error : Corner not found at file: "+filename
-                    return "Error : ไม่พบมุมของกระดาษคำตอบที่ไฟล์: "+filename
+                    return "ไม่พบกรอบของกระดาษคำตอบที่ไฟล์: "+filename
                 else: 
                     break
             if largest is not None:
@@ -118,7 +118,6 @@ def pre_process_ans(srcpath, dstpath, filename):
             # cv2.waitKey(1000)
             # cv2.destroyAllWindows()
             hist_mask = cv2.calcHist([th], [0], mask[i], [2], [0, 256])
-            # print(hist_mask[0])
             if hist_mask[0] > 400:
                 rt = i
                 havecon = True
@@ -134,7 +133,7 @@ def pre_process_ans(srcpath, dstpath, filename):
                 rotation = 0
         else:
             # return "Error : QRcode not found or QRcode not in corner at file: "+filename
-            return "Error : ไม่พบ QRcode หรือ QRcode ไม่ได้อยู่ในมุมของกระดาษคำตอบที่ไฟล์: "+filename
+            return "ไม่พบ QRcode หรือ QRcode ไม่ได้อยู่ในมุมของกระดาษคำตอบที่ไฟล์: "+filename
             
 
         scale = 1

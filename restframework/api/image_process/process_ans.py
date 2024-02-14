@@ -29,7 +29,8 @@ def get_true_pix(thresh, mask):
 
 def process_ans(srcpath, filename, num_choice, debug=False):
     try:
-        true_pix_check = 24.7
+        true_pix_check = 0.38*60
+        threshold_ans = 190
         error_table_std = None
         error_table_sub = None
         error_table_ans = None
@@ -38,7 +39,6 @@ def process_ans(srcpath, filename, num_choice, debug=False):
         height, width, channels = img.shape
 
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        thresh = cv2.GaussianBlur(gray, (5, 5), 0)
         # thresh = cv2.Canny(thresh, 0, 180)
         ret, thresh = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY_INV)
         # kernel = np.ones((5,5),np.uint8)
@@ -102,7 +102,7 @@ def process_ans(srcpath, filename, num_choice, debug=False):
         if table_std is not None:
             height1, width1, ch = table_std.shape
             gray = cv2.cvtColor(table_std, cv2.COLOR_BGR2GRAY)
-            ret, thresh = cv2.threshold(gray, 175, 255, cv2.THRESH_BINARY)
+            ret, thresh = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY)
             kernel = np.ones((5,5),np.uint8)
             thresh=cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel ,iterations=1)
             # cv2.imshow('BILL', thresh)
@@ -181,7 +181,7 @@ def process_ans(srcpath, filename, num_choice, debug=False):
         if table_sub is not None:
             height2, width2, ch = table_sub.shape
             gray = cv2.cvtColor(table_sub, cv2.COLOR_BGR2GRAY)
-            ret, thresh = cv2.threshold(gray, 175, 255, cv2.THRESH_BINARY)
+            ret, thresh = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY)
             kernel = np.ones((5,5),np.uint8)
             thresh=cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel ,iterations=1)
             # cv2.rectangle(thresh,(3,3),(width2-3,height2-3),(255, 255, 255),5)
@@ -272,9 +272,9 @@ def process_ans(srcpath, filename, num_choice, debug=False):
         if table_ans is not None:
             height3, width3, channels = table_ans.shape
             gray = cv2.cvtColor(table_ans, cv2.COLOR_BGR2GRAY)
-            ret, thresh = cv2.threshold(gray, 120, 255, cv2.THRESH_BINARY_INV)
+            ret, thresh = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY_INV)
             mask = np.zeros(thresh.shape[:2], np.uint8)
-            mask[0:height3, 0:25] = 255
+            mask[10:height3-10, 0:25] = 255
             masked_img = cv2.bitwise_and(thresh,thresh,mask = mask)
             kernel = np.ones((1,10),np.uint8)
             masked_img = cv2.morphologyEx(masked_img, cv2.MORPH_OPEN, kernel)
@@ -316,7 +316,7 @@ def process_ans(srcpath, filename, num_choice, debug=False):
             if mkv1 is None or mkv2 is None or mkv3 is None or mkv4 is None: error_mkv = "can't find mkv at "+filename
 
             mask = np.zeros(thresh.shape[:2], np.uint8)
-            mask[0:height3, width3-25:width3] = 255
+            mask[10:height3-35, width3-25:width3] = 255
             masked_img = cv2.bitwise_and(thresh,thresh,mask = mask)
             kernel = np.ones((1,10),np.uint8)
             thresh_morp = cv2.morphologyEx(masked_img, cv2.MORPH_OPEN, kernel)
@@ -331,37 +331,37 @@ def process_ans(srcpath, filename, num_choice, debug=False):
                 area = cv2.contourArea(cont)
                 epsilon = 0.01 * cv2.arcLength(cont, True)
                 approx = cv2.approxPolyDP(cont, epsilon, True)
-                if(area<150 and area>70 ):
+                if(area<200 and area>80 ):
                     a_sorted, box = get_sorted_box(approx)
                     if a_sorted is not None:
-                        # print(a_sorted)
+                        # print(a_sorted, area)
                         if  a_sorted[0][1] <250 :
                             mkvr1= (a_sorted[1][1] - a_sorted[0][1])/2.0
                             mkvr1 = int(round(mkvr1))
                             mkvr1 = a_sorted[0][1] + mkvr1
-                            # print(mkvr1)
+                            # print("mkvr1", mkvr1)
                         elif a_sorted[0][1] >250 and a_sorted[0][1] <500 :
                             mkvr2= (a_sorted[1][1] - a_sorted[0][1])/2.0
                             mkvr2 = int(round(mkvr2))
                             mkvr2 = a_sorted[0][1] + mkvr2
-                            # print(mkvr2)
+                            # print("mkvr2", mkvr2)
                         elif a_sorted[0][1] >500 and a_sorted[0][1] <750 :
                             mkvr3= (a_sorted[1][1] - a_sorted[0][1])/2.0
                             mkvr3 = int(round(mkvr3))
                             mkvr3 = a_sorted[0][1] + mkvr3
-                            # print(mkvr3)
+                            # print("mkvr3", mkvr3)
                         elif a_sorted[0][1] >750 :
                             mkvr4= (a_sorted[1][1] - a_sorted[0][1])/2.0
                             mkvr4 = int(round(mkvr4))
                             mkvr4 = a_sorted[0][1] + mkvr4
-                            # print(mkvr4)
+                            # print("mkvr4", mkvr4)
             if mkvr1 is None or mkvr2 is None or mkvr3 is None or mkvr4 is None: error_mkvr = "can't find mkvr at "+filename
 
             height3, width3, channels = table_ans.shape
             gray = cv2.cvtColor(table_ans, cv2.COLOR_BGR2GRAY)
             ret, thresh = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY_INV)
             mask = np.zeros(thresh.shape[:2], np.uint8)
-            mask[0:25, 0:width3] = 255
+            mask[0:25, 10:width3-10] = 255
             masked_img = cv2.bitwise_and(thresh,thresh,mask = mask)
             kernel = np.ones((10,1),np.uint8)
             thresh_morp = cv2.morphologyEx(masked_img, cv2.MORPH_OPEN, kernel)
@@ -426,7 +426,7 @@ def process_ans(srcpath, filename, num_choice, debug=False):
                         # print(mkh5_1)
 
             mask = np.zeros(thresh.shape[:2], np.uint8)
-            mask[height3-25:height3, 0:width3] = 255
+            mask[height3-25:height3, 10:width3-33] = 255
             masked_img = cv2.bitwise_and(thresh,thresh,mask = mask)
             kernel = np.ones((10,1),np.uint8)
             thresh_morp = cv2.morphologyEx(masked_img, cv2.MORPH_OPEN, kernel)
@@ -491,8 +491,8 @@ def process_ans(srcpath, filename, num_choice, debug=False):
                         mkhb5_1 = a_sorted[0][0] + mkhb5_1
 
             gray = cv2.cvtColor(table_ans, cv2.COLOR_BGR2GRAY)
-            gray = cv2.GaussianBlur(gray, (5, 5), 0)
-            ret, thresh = cv2.threshold(gray, 190, 255, cv2.THRESH_BINARY)
+            # gray = cv2.GaussianBlur(gray, (5, 5), 0)
+            ret, thresh = cv2.threshold(gray, threshold_ans, 255, cv2.THRESH_BINARY)
             # thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
             linek = np.ones((3, 3),np.uint8)
             thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, linek ,iterations=1)
@@ -564,9 +564,10 @@ def process_ans(srcpath, filename, num_choice, debug=False):
         
         if table_std is None : error_table_std = "ไม่พบตารางรหัสนักศึกษา"
         if table_sub is None : error_table_sub = "ไม่พบตารางรหัสวิชา"
-        if table_ans is None : error_table_ans = "ไม่พบ Marker ของส่วนคำตอบ"
+        if table_ans is None or error_mkv is not None or error_mkvr is not None or error_mkh is not None or error_mkhb is not None: 
+            error_table_ans = "ไม่พบ Marker ของส่วนคำตอบ"
 
-        error = [error_table_std, error_table_sub, error_table_ans, error_mkv, error_mkvr, error_mkh, error_mkhb]
+        error = [error_table_std, error_table_sub, error_table_ans]
         ##############################################################################
         
         if (error_mkv is None and 

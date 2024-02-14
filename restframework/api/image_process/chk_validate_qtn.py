@@ -1,3 +1,5 @@
+import sys
+
 def chk_part_2_qtn(part_2, part_2_pattern):
     part_2 = part_2.split(',')
     part_2_pattern = part_2_pattern.split(',')
@@ -50,5 +52,8 @@ def chk_validate_qtn(part_1, part_2):
             check_qtn = False
         check = [check_qtn, part_1_check, part_2_check]
         return [check, part_1_, part_2_]
-    except:
-        return [False, None, None]
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        return "valid Error Line "+str(exc_tb.tb_lineno if exc_tb else None)+" : "+str(e)
+        print("valid error :",e)
+        return [[False, e, None], None, None]

@@ -1,6 +1,7 @@
 import os
 import json
 from datetime import datetime, timedelta
+import time
 import pandas as pd
 from rest_framework import status, viewsets, permissions, routers
 from rest_framework.decorators import api_view
@@ -487,7 +488,7 @@ def examanswersUploadPaper(request):
         os.makedirs(preprocess_path, exist_ok=True)
         pre = pre_process_ans(original_path, preprocess_path, file.name)
         if pre == True:
-            data = process_ans(preprocess_path, "pre_"+file.name, exam.numberofexams, True)
+            data = process_ans(preprocess_path, "pre_"+file.name, exam.numberofexams, debug=False)
             err = ''
             for i in range(0, len(data[0])):
                 if data[0][i] != None:
@@ -623,7 +624,7 @@ def examinformationUpdate(request, pk):
             examinfo['imgansstd_path'] = img_link
 
             if pre == True:
-                data = process_ans(pre_path, "pre_"+file.name, exam.numberofexams, True)
+                data = process_ans(pre_path, "pre_"+file.name, exam.numberofexams, debug=False)
                 error_data = ''
                 for i in range(0, len(data[0])):
                     if data[0][i] != None:
@@ -631,7 +632,7 @@ def examinformationUpdate(request, pk):
                             error_data += str(data[0][i])
                         else:
                             error_data += ','+str(data[0][i])
-                if error_data == '':
+                if data[0][2] != "ไม่พบ Marker ของส่วนคำตอบ":
                     # chk_validate_ans return [check, std_id, sec, seat_id, sub_id, ex_id, answer]
                     valid = chk_validate_ans(data[1], data[2], data[3], data[4], data[5], data[6])
                     error_valid = ''
@@ -714,6 +715,7 @@ def examinformationDelete(request, pk):
 
 @api_view(['POST'])
 def examinformationUploadPaper(request):
+    tic = time.time()
     res = []
     user = User.objects.get(userid=request.data['userid'])
     exam = Exam.objects.get(examid=request.data['examid'])
@@ -735,7 +737,7 @@ def examinformationUploadPaper(request):
             examinfo['imgansstd_path'] = img_link
 
             if pre == True:
-                data = process_ans(pre_path, "pre_"+file.name, exam.numberofexams, True)
+                data = process_ans(pre_path, "pre_"+file.name, exam.numberofexams, debug=False)
                 error_data = ''
                 for i in range(0, len(data[0])):
                     if data[0][i] != None:
@@ -743,7 +745,7 @@ def examinformationUploadPaper(request):
                             error_data += str(data[0][i])
                         else:
                             error_data += ','+str(data[0][i])
-                if error_data == '':
+                if data[0][2] != "ไม่พบ Marker ของส่วนคำตอบ":
                     # chk_validate_ans return [check, std_id, sec, seat_id, sub_id, ex_id, answer]
                     valid = chk_validate_ans(data[1], data[2], data[3], data[4], data[5], data[6])
                     error_valid = ''
@@ -813,8 +815,16 @@ def examinformationUploadPaper(request):
         examinfo_serializer = ExaminformationSerializer(data=examinfo)
         if examinfo_serializer.is_valid():
             examinfo_serializer.save()
-        res.append(examinfo_serializer.data)
+            res.append(examinfo_serializer.data)
+        else:
+            error = examinfo_serializer.errors
+            res.append({"err" : error})
     res_dict = {"result" : res}
+    toc = time.time()
+    print("Time: ", toc-tic)
+    print("res: ", len(res_dict['result']))
+    exam.statusexam = '4'
+    exam.save()
     return Response(res_dict, status=status.HTTP_201_CREATED)
 
 ##########################################################################################
@@ -1379,7 +1389,6 @@ def queinformationUploadPaper(request):
         }
         if file.name.lower().endswith('.jpg') or file.name.lower().endswith('.jpeg'):
             fs.save(ori_path+file.name, file)
-            data = read_qrcode(ori_path+file.name, request.data['src'])
             pre = pre_process_qtn(ori_path, pre_path, file.name)
             if pre == True:
                 img_link = request.build_absolute_uri("/media"+default_path+"questionnaire/original/"+file.name)
@@ -1408,14 +1417,19 @@ def queinformationUploadPaper(request):
                     valid = chk_validate_qtn(proc[1], proc[2])
                     queinformation_data['ansquehead'] = valid[1]
                     queinformation_data['ansquetopic'] = valid[2]
-                    if data != False:
-                        if data[0] != "CE KMITL-"+str(request.data['quesheetid']):
-                            queinformation_data['errorstype'] = "QR Code ไม่ตรงกับแบบสอบถาม"
+                    if os.path.exists(pre_path+"pre_"+file.name) == True:
+                        data = read_qrcode(pre_path+"pre_"+file.name)
+                    else:
+                        data = read_qrcode(ori_path+file.name)
+                    if data != "CE KMITL-"+str(request.data['quesheetid']):
+                        queinformation_data['errorstype'] = "QR Code ไม่ตรงกับแบบสอบถาม"
+                    else:
+                        queinformation_data['errorstype'] = "ไม่พบข้อมูล QR Code ในภาพ"
 
                     if valid[0][0] == False:
                         if queinformation_data['errorstype'] != None:
                             queinformation_data['errorstype'] += ","
-                            
+
                         if valid[0][1] != None and valid[0][2] != None:
                             queinformation_data['errorstype'] = str(valid[0][1])+","+str(valid[0][2])
                         elif valid[0][1] != None and valid[0][2] == None:
@@ -1437,8 +1451,9 @@ def queinformationUploadPaper(request):
         queinformation_serializer = QueinformationSerializer(data=queinformation_data)
         if queinformation_serializer.is_valid():
             queinformation_serializer.save()
-        res.append(queinformation_serializer.data)
-    return Response(res, status=status.HTTP_201_CREATED)
+            res.append(queinformation_serializer.data)
+    result = {"msg" : "อัพโหลดข้อมูลแบบสอบถามสำเร็จ", "result" : res}
+    return Response(result, status=status.HTTP_201_CREATED)
 
 ##########################################################################################
 #- Request

@@ -7,18 +7,19 @@ import sys
 
 def pre_process_qtn(srcpath, dstpath, filename):
     try:
+        error = "ไม่พบกรอบ หรือ QRcode ของแบบสอบถามที่ไฟล์ : "+filename
         isExist = os.path.exists(dstpath)
         if isExist == False:
             os.mkdir(dstpath)
 
         img = cv2.imread(srcpath+filename)
-        img = cv2.resize(img, (992, 1403))
         gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        blurred = cv2.GaussianBlur(gray_img, (5, 5), 0)
-        edged = cv2.Canny(blurred, 30, 100)
+        ret, thresh = cv2.threshold(gray_img, 150, 255, cv2.THRESH_BINARY_INV)
+        # blurred = cv2.GaussianBlur(gray_img, (5, 5), 0)
+        # edged = cv2.Canny(blurred, 30, 100)
         height, width, ch = img.shape
 
-        contours, hierarchy = cv2.findContours(edged, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
         # Find the largest contour
         largest = None
@@ -28,13 +29,13 @@ def pre_process_qtn(srcpath, dstpath, filename):
             if area > max_area:
                 epsilon = 0.05 * cv2.arcLength(i, True)
                 approx = cv2.approxPolyDP(i, epsilon, True)
-                if len(approx) == 4 and area > 10000.0:
+                if len(approx) == 4:
                     largest = approx
                     max_area = area
 
         # Reshape the largest contour to get the corner points
         if largest is None:
-            return "Error : Corner not found at file: "+filename
+            return error
         else:
             points = largest.reshape(4, 2)
 
@@ -86,9 +87,23 @@ def pre_process_qtn(srcpath, dstpath, filename):
         rotation = 0
         for i in range(4):
             hist_mask = cv2.calcHist([th], [0], mask[i], [2], [0,256])
-            if hist_mask[0] > 400:
+            print(hist_mask[0])
+            # if hist_mask[0] > 2800 and hist_mask[0] < 4000:
+            if hist_mask[0] > 400 and hist_mask[0] < 600:
                 rt = i
                 havecon = True
+
+        # if havecon == True:
+        #     if rt == 0 :
+        #         rotation = -90
+        #     elif rt == 1 :
+        #         rotation = 180
+        #     elif rt == 2 :
+        #         rotation = 0
+        #     elif rt == 3 :
+        #         rotation = 90
+        # else:
+        #     return error
 
         if havecon == True:
             if rt == 0 :
@@ -100,7 +115,7 @@ def pre_process_qtn(srcpath, dstpath, filename):
             elif rt == 3 :
                 rotation = 0
         else:
-            return "Error : QRcode not found or QRcode not in corner at file: "+filename
+            return "ไม่พบ QRcode หรือ QRcode ไม่ได้อยู่ในมุมของแบบสอบถามที่ไฟล์: "+filename
                 
         scale = 1
         w = dst.shape[1]

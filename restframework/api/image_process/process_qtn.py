@@ -28,6 +28,7 @@ def process_qtn(srcpath, dstpathp1, dstpathp3, file, p1, indpart1, indpart2):
         c=0
         d1=0
 
+        cropimg1 = None
         for a in contours:
             area = cv2.contourArea(contours[c])
             if area < 200000 and area > 175000:
@@ -73,25 +74,27 @@ def process_qtn(srcpath, dstpathp1, dstpathp3, file, p1, indpart1, indpart2):
         thresh=cv2.morphologyEx(masked_img3, cv2.MORPH_CLOSE, ke ,iterations=1)
         cv2.imwrite(srcpath+"path3.2"+file,thresh)
         hist_mask = cv2.calcHist([thresh],[0],mask,[2],[0,256])
-        print(hist_mask[0])
         if hist_mask[0] > 3000:
             cropimg3=img[a_sorted3[1][1]+10 :height-15 , 15 :width-100 ]
             cv2.imwrite(dstpathp3+"p3_"+file,cropimg3)
 
-        height1, width1, channels = cropimg1.shape
-        gray = cv2.cvtColor(cropimg1, cv2.COLOR_BGR2GRAY)
-        ret, thresh = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY)
-        linek = np.ones((5,5),np.uint8)
-        thresh=cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, linek ,iterations=1)
-        cv2.rectangle(thresh,(2,2),(width1-3,height1-3),(255,255,255),5)
+        if cropimg1 is not None:
+            height1, width1, channels = cropimg1.shape
+            gray = cv2.cvtColor(cropimg1, cv2.COLOR_BGR2GRAY)
+            ret, thresh = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY)
+            linek = np.ones((5,5),np.uint8)
+            thresh=cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, linek ,iterations=1)
+            cv2.rectangle(thresh,(2,2),(width1-3,height1-3),(255,255,255),5)
 
-        if width1 > 910 or  width1 < 890:
-            err1+=1
-        if height1 > 210 or height1 < 190:
-            err1+=1
+            if width1 > 910 or  width1 < 890:
+                err1+=1
+            if height1 > 210 or height1 < 190:
+                err1+=1
 
-        if err1!=0:
-            err1="Image File : "+file+" has something error in part1 ."
+            if err1!=0:
+                err1="Image File : "+file+" has something error in part1 ."
+        else:
+            err1="ไม่พบส่วนที่ ๅ ของแบบสอบถามที่ไฟล์: "+file+" หรือ รูปภาพไม่ถูกต้อง"
 
         l = int(round(height1/5.0))
         s = int(round(26/100.0 * width1))
@@ -101,32 +104,32 @@ def process_qtn(srcpath, dstpathp1, dstpathp3, file, p1, indpart1, indpart2):
         part1 = []
         n=0
 
-        for r in range(len(indpart1)):
-             for q in range(len(indpart1[r])):
-                mask = np.zeros(thresh.shape[:2], np.uint8)
-                mask[0+(l*r):l+(l*r), s+(b*q):s+(b*q)+x] = 255
-                masked_img = cv2.bitwise_and(thresh,thresh,mask = mask)
-                hist_mask = cv2.calcHist([thresh],[0],mask,[2],[0,256])
-                print(str(r+1)+str(q+1),hist_mask[0])
-                if hist_mask[0] > 40 :
-                    if n == 0 :
-                        part1.append([])
-                        part1[r].append(r+1)
-                        n+=1
-                    part1[r].append(q+1)
-                    count = count +1
-                    if any("p1"+str(r+1)+str(q+1) in s for s in p1):
-                        other = cropimg1[0+(l*r)-15 :l+(l*r) ,s+(b*q):s+(b*q)+b+20 ]
-                        path = dstpathp1+'หัวข้อที่ '+str(r+1)+"/"+'ตัวเลือกที่ '+str(q+1)+"/"
-                        os.makedirs(path, exist_ok=True)
-                        cv2.imwrite(path+"p1"+str(r+1)+str(q+1)+"_"+file, other)
+        if err1 == 0 and cropimg1 is not None:
+            for r in range(len(indpart1)):
+                for q in range(len(indpart1[r])):
+                    mask = np.zeros(thresh.shape[:2], np.uint8)
+                    mask[0+(l*r):l+(l*r), s+(b*q):s+(b*q)+x] = 255
+                    masked_img = cv2.bitwise_and(thresh,thresh,mask = mask)
+                    hist_mask = cv2.calcHist([thresh],[0],mask,[2],[0,256])
+                    if hist_mask[0] > 40 :
+                        if n == 0 :
+                            part1.append([])
+                            part1[r].append(r+1)
+                            n+=1
+                        part1[r].append(q+1)
+                        count = count +1
+                        if any("p1"+str(r+1)+str(q+1) in s for s in p1):
+                            other = cropimg1[0+(l*r)-15 :l+(l*r) ,s+(b*q):s+(b*q)+b+20 ]
+                            path = dstpathp1+'หัวข้อที่ '+str(r+1)+"/"+'ตัวเลือกที่ '+str(q+1)+"/"
+                            os.makedirs(path, exist_ok=True)
+                            cv2.imwrite(path+"p1"+str(r+1)+str(q+1)+"_"+file, other)
 
-             if count == 0 :
-                part1.append([])
-                part1[r].append(r+1)
-                part1[r].append("n")
-             count = 0
-             n=0
+                if count == 0 :
+                    part1.append([])
+                    part1[r].append(r+1)
+                    part1[r].append("n")
+                count = 0
+                n=0
 
         height2, width2, channels = cropimg2.shape
         gray = cv2.cvtColor(cropimg2, cv2.COLOR_BGR2GRAY)
@@ -149,26 +152,27 @@ def process_qtn(srcpath, dstpathp1, dstpathp3, file, p1, indpart1, indpart2):
         part2 = []
         n=0
 
-        for r in range(len(indpart2)):
-            for q in range(6):
-                mask = np.zeros(thresh.shape[:2], np.uint8)
-                mask[0+(row*r):row+(row*r), 0+(col*q):col+(col*q)] = 255
-                masked_img = cv2.bitwise_and(thresh,thresh,mask = mask)
-                hist_mask = cv2.calcHist([thresh],[0],mask,[2],[0,256])
-                if hist_mask[0] > 40 :
-                    if n == 0 :
-                        part2.append([])
-                        part2[r].append(r+1)
-                        n+=1
-                    part2[r].append(abs(q-5))
-                    count = count +1
+        if err2 == 0:
+            for r in range(len(indpart2)):
+                for q in range(6):
+                    mask = np.zeros(thresh.shape[:2], np.uint8)
+                    mask[0+(row*r):row+(row*r), 0+(col*q):col+(col*q)] = 255
+                    masked_img = cv2.bitwise_and(thresh,thresh,mask = mask)
+                    hist_mask = cv2.calcHist([thresh],[0],mask,[2],[0,256])
+                    if hist_mask[0] > 40 :
+                        if n == 0 :
+                            part2.append([])
+                            part2[r].append(r+1)
+                            n+=1
+                        part2[r].append(abs(q-5))
+                        count = count +1
 
-            if count == 0 :
-                part2.append([])
-                part2[r].append(r+1)
-                part2[r].append("n")
-            count = 0
-            n=0
+                if count == 0 :
+                    part2.append([])
+                    part2[r].append(r+1)
+                    part2[r].append("n")
+                count = 0
+                n=0
 
         chk_err = True
         if err1 != 0 or err2 != 0:
