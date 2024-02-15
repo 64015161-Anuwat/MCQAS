@@ -9,6 +9,7 @@ import sys, os
 # @profile
 def pre_process_ans(srcpath, dstpath, filename):
     try:
+        error = "ไม่พบกรอบ หรือ QRcode ของกระดาษคำตอบที่ไฟล์ : "+filename
         isExist = os.path.exists(dstpath)
         if isExist == False:
             os.mkdir(dstpath)
@@ -52,7 +53,7 @@ def pre_process_ans(srcpath, dstpath, filename):
                 # Reshape the largest contour to get the corner points
                 if largest is None:
                     # return "Error : Corner not found at file: "+filename
-                    return "ไม่พบกรอบของกระดาษคำตอบที่ไฟล์: "+filename
+                    return error
                 else: 
                     break
             if largest is not None:
@@ -118,7 +119,7 @@ def pre_process_ans(srcpath, dstpath, filename):
             # cv2.waitKey(1000)
             # cv2.destroyAllWindows()
             hist_mask = cv2.calcHist([th], [0], mask[i], [2], [0, 256])
-            if hist_mask[0] > 400:
+            if hist_mask[0] > 400 and hist_mask[0] < 700:
                 rt = i
                 havecon = True
 
@@ -133,7 +134,7 @@ def pre_process_ans(srcpath, dstpath, filename):
                 rotation = 0
         else:
             # return "Error : QRcode not found or QRcode not in corner at file: "+filename
-            return "ไม่พบ QRcode หรือ QRcode ไม่ได้อยู่ในมุมของกระดาษคำตอบที่ไฟล์: "+filename
+            return error
             
 
         scale = 1

@@ -17,12 +17,10 @@ def create_qrcode(dst, data):
 def read_qrcode(src, src_=None):
     img = cv2.imread(src)
     img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    height, width, channels = img.shape
 
     img_list = [img_gray,
-                img_gray[0:round(img_gray.shape[0]*0.12), round(img_gray.shape[1]/1.2):img_gray.shape[1]],
-                img_gray[img_gray.shape[0]-round(img_gray.shape[0]*0.12):img_gray.shape[0], round(img_gray.shape[1]/1.2):img_gray.shape[1]],
-                img_gray[img_gray.shape[0]-round(img_gray.shape[0]*0.12):img_gray.shape[0], 0:img_gray.shape[1]-round(img_gray.shape[1]/1.2)],
-                img_gray[0:round(img_gray.shape[0]*0.12), 0:img_gray.shape[1]-round(img_gray.shape[1]/1.2)]]
+                img_gray[height-85:height, width-85:width]]
     
     decoded = decode(img, symbols=[ZBarSymbol.QRCODE])
     img_succ = img

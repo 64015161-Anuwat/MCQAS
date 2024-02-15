@@ -333,7 +333,13 @@ def examCreate(request):
 
 @api_view(['PUT'])
 def examUpdate(request, pk):
-    exam = Exam.objects.get(examid=pk)
+    data = request.data
+    if 'reset_logo' in request.data:
+        data['imganswersheetformat_path'] = request.build_absolute_uri("/media/original_answersheet/")
+    try:
+        exam = Exam.objects.get(examid=pk, userid=data['userid'])
+    except Exam.DoesNotExist:
+        return Response(exam_notfound, status=status.HTTP_404_NOT_FOUND)
     serializer = ExamSerializer(instance=exam, data=request.data)
     if serializer.is_valid():
         serializer.save()
@@ -815,15 +821,14 @@ def examinformationUploadPaper(request):
         examinfo_serializer = ExaminformationSerializer(data=examinfo)
         if examinfo_serializer.is_valid():
             examinfo_serializer.save()
-            res.append(examinfo_serializer.data)
         else:
-            error = examinfo_serializer.errors
-            res.append({"err" : error})
+            print("examinfo_serializer.errors : ", examinfo_serializer.errors)
+        res.append(examinfo_serializer.data)
     res_dict = {"result" : res}
     toc = time.time()
     print("Time: ", toc-tic)
     print("res: ", len(res_dict['result']))
-    exam.statusexam = '4'
+    exam.sequencesteps = '4'
     exam.save()
     return Response(res_dict, status=status.HTTP_201_CREATED)
 
@@ -1279,7 +1284,6 @@ def queinformationUpdate(request, pk):
 
         if file.name.lower().endswith('.jpg') or file.name.lower().endswith('.jpeg'):
             fs.save(ori_path+file.name, file)
-            data = read_qrcode(ori_path+file.name, request.data['src'])
             pre = pre_process_qtn(ori_path, pre_path, file.name)
             if pre == True:
                 img_link = request.build_absolute_uri("/media"+default_path+"questionnaire/original/"+file.name)
@@ -1308,6 +1312,11 @@ def queinformationUpdate(request, pk):
                     valid = chk_validate_qtn(proc[1], proc[2])
                     queinformation_data['ansquehead'] = valid[1]
                     queinformation_data['ansquetopic'] = valid[2]
+
+                    if os.path.exists(pre_path+"pre_"+file.name) == True:
+                        data = read_qrcode(pre_path+"pre_"+file.name)
+                    else:
+                        data = read_qrcode(ori_path+file.name)
                     if data != False:
                         if data[0] != "CE KMITL-"+str(request.data['quesheetid']):
                             queinformation_data['errorstype'] = "QR Code ไม่ตรงกับแบบสอบถาม"
@@ -1351,6 +1360,7 @@ def queinformationDelete(request, pk):
 
 @api_view(['POST'])
 def queinformationUploadPaper(request):
+    tic = time.time()
     res = []
     user = User.objects.get(userid=request.data['userid'])
     quesheet = Quesheet.objects.get(quesheetid=request.data['quesheetid'])
@@ -1414,9 +1424,12 @@ def queinformationUploadPaper(request):
                 proc = process_qtn(pre_path, part_1_path, part_3_path,"pre_"+file.name, p1_answer_format, format_part_1, format_part_2)
 
                 if proc[0][0]:
+                    print("proc : ", proc)
                     valid = chk_validate_qtn(proc[1], proc[2])
+                    print("valid : ", valid)
                     queinformation_data['ansquehead'] = valid[1]
                     queinformation_data['ansquetopic'] = valid[2]
+
                     if os.path.exists(pre_path+"pre_"+file.name) == True:
                         data = read_qrcode(pre_path+"pre_"+file.name)
                     else:
@@ -1451,8 +1464,13 @@ def queinformationUploadPaper(request):
         queinformation_serializer = QueinformationSerializer(data=queinformation_data)
         if queinformation_serializer.is_valid():
             queinformation_serializer.save()
-            res.append(queinformation_serializer.data)
+        else:
+            print("queinformation_serializer.errors : ", queinformation_serializer.errors)
+        res.append(queinformation_serializer.data)
     result = {"msg" : "อัพโหลดข้อมูลแบบสอบถามสำเร็จ", "result" : res}
+    toc = time.time()
+    print("Time : ", toc-tic)
+    print("Result : ", len(result['result']))
     return Response(result, status=status.HTTP_201_CREATED)
 
 ##########################################################################################
