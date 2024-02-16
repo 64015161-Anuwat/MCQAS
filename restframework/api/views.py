@@ -1,7 +1,13 @@
+import pandas as pd
+import numpy as np
+import csv
+import shutil
 import os
 import json
+
 from datetime import datetime, timedelta
 import time
+
 from django.conf import Settings
 from keyboard import send
 import pandas as pd
@@ -39,7 +45,7 @@ def overview(request):
         'user': {
             'GET    - List': '/user/',
             'POST   - Create': '/user/create/',
-            'POST   - VerifyEmail': '/user/verify/email/<str:e_kyc>/',
+            'POST   - VerifyEmail': '/verify/email/<str:e_kyc>/',
             'GET    - Detail': '/user/detail/<str:pk>/',
             'PUT    - Update': '/user/update/<str:pk>/',
             'DELETE - Delete': '/user/delete/<str:pk>/',
@@ -705,10 +711,10 @@ def examinformationUpdate(request, pk):
 
                     csv_path = fs.path('')+"/"+str(user.userid)+"/ans/"+str(exam.subid.subid)+"/"+str(request.data['examid'])+"/student_list/student_list.csv"
                     df = pd.read_csv(csv_path)
-                    df['Student ID'] = df['Student ID'].astype(str)
+                    df['รหัสนักศึกษา'] = df['รหัสนักศึกษา'].astype(str)
                     index = df[df['รหัสนักศึกษา'] == valid[1]].index
                     err_std = "ไม่พบรหัสนักศึกษาในรายชื่อ" if index.empty else ''
-                    examinfo['stdemail'] = df['Email'][index[0]] if not index.empty else None
+                    examinfo['stdemail'] = df['อีเมล'][index[0]] if not index.empty else None
 
                     try:
                         queryset = Examanswers.objects.get(examid=request.data['examid'], examnoanswers=valid[5])
@@ -818,10 +824,10 @@ def examinformationUploadPaper(request):
 
                     csv_path = fs.path('')+"/"+str(user.userid)+"/ans/"+str(exam.subid.subid)+"/"+str(request.data['examid'])+"/student_list/student_list.csv"
                     df = pd.read_csv(csv_path)
-                    df['Student ID'] = df['Student ID'].astype(str)
-                    index = df[df['Student ID'] == valid[1]].index
+                    df['รหัสนักศึกษา'] = df['รหัสนักศึกษา'].astype(str)
+                    index = df[df['รหัสนักศึกษา'] == valid[1]].index
                     err_std = "ไม่พบรหัสนักศึกษาในรายชื่อ" if index.empty else ''
-                    examinfo['stdemail'] = df['Email'][index[0]] if not index.empty else None
+                    examinfo['stdemail'] = df['อีเมล'][index[0]] if not index.empty else None
 
                     try:
                         queryset = Examanswers.objects.get(examid=request.data['examid'], examnoanswers=valid[5])
@@ -886,14 +892,84 @@ def examinformationResult(request, pk):
     except Exam.DoesNotExist:
         return Response(exam_notfound, status=status.HTTP_404_NOT_FOUND)
     queryset = Examinformation.objects.filter(examid=pk)
-    serializer = ExaminformationSerializer(queryset, many=True)
+    examinfo_serializer = ExaminformationSerializer(queryset, many=True)
     fs = FileSystemStorage()
     csv_path = fs.path('')+"/"+str(user.userid)+"/ans/"+str(exam.subid.subid)+"/"+str(exam.examid)+"/student_list/student_list.csv"
     if os.path.exists(csv_path):
         csv_result_path = fs.path('')+"/"+str(user.userid)+"/ans/"+str(exam.subid.subid)+"/"+str(exam.examid)+"/result/"
-        df = pd.DataFrame(csv_path)
-        df = df.drop(['email'])
-        df.to_csv(csv_result_path+"result.csv", index=False)
+        os.makedirs(csv_result_path, exist_ok=True)
+        csv_result_path += "result_student_list.csv"
+        if os.path.exists(csv_result_path) == False:
+            # Copy the original file to the result directory with a new name
+            shutil.copyfile(csv_path, os.path.join(csv_result_path))
+
+            data_proc = [
+                ['', '', 'Min :'],
+                ['', '', 'Max :'],
+                ['', '', 'Average :'],
+                ['', '', 'Median :'],
+                ['', '', 'Variance :'],
+                ['', '', 'S.D :'],
+                ['', '', 'C.V.(%) :'],
+                ['', '', 'Total :'],
+            ]
+
+            # Read the CSV file into a list of lists
+            inFile = []
+            with open(csv_path, 'r', newline='', encoding='utf-8') as csvfile:
+                reader = csv.reader(csvfile)
+                for row in reader:
+                    inFile.append(row.copy())
+
+            # Find and remove the column named 'อีเมล' if it exists
+            if 'อีเมล' in inFile[0]:
+                column_to_remove_index = inFile[0].index('อีเมล')
+                for row in inFile:
+                    del row[column_to_remove_index]
+
+            # Add new columns to the header row
+            inFile[0].extend(['จำนวนข้อที่ตอบถูก', 'จำนวนข้อที่ตอบผิด', 'จำนวนข้อที่ไม่ตอบ', 'คะแนน'])
+
+            # Add data_proc to inFile
+            inFile.extend(data_proc)
+
+            correct = []
+            wrong = []
+            no_ans = []
+            score = []
+
+            data_row = [correct, wrong, no_ans, score]
+
+            for i in examinfo_serializer.data:
+                for ii in inFile[1:]:
+                    if ii[0] == i['stdid']:
+                        ii.extend([i['correct'], 
+                                   i['wrong'], 
+                                   i['unresponsive'], 
+                                   i['score']])
+                        data_row[0].append(int(i['correct']))
+                        data_row[1].append(int(i['wrong']))
+                        data_row[2].append(int(i['unresponsive']))
+                        data_row[3].append(float(i['score']))
+
+            for i in range(len(data_row)):
+                data_proc[0].append(np.min(data_row[i]))
+                data_proc[1].append(np.max(data_row[i]))
+                data_proc[2].append(round(np.average(data_row[i]), 2))
+                data_proc[3].append(round(np.median(data_row[i]), 2))
+                data_proc[4].append(round(np.var(data_row[i]), 2))
+                data_proc[5].append(round(np.std(data_row[i]), 2))
+                data_proc[6].append(round(np.std(data_row[i]) / np.average(data_row[i]) * 100, 2))
+                data_proc[7].append(np.sum(data_row[i]))
+
+            # Write the updated data back to the CSV file
+            with open(csv_result_path, 'w', newline='', encoding='utf-8') as csvfile:
+                writer = csv.writer(csvfile)
+                for row in inFile:
+                    writer.writerow(row)
+            return Response({"link_result": request.build_absolute_uri("/media/"+str(user.userid)+"/ans/"+str(exam.subid.subid)+"/"+str(exam.examid)+"/result/result_student_list.csv")}, status=status.HTTP_200_OK)
+        else:
+            return Response({"link_result": request.build_absolute_uri("/media/"+str(user.userid)+"/ans/"+str(exam.subid.subid)+"/"+str(exam.examid)+"/result/result_student_list.csv")}, status=status.HTTP_200_OK)
     else:
         return Response({"err" : "ไม่พบไฟล์รายชื่อนักศึกษา"}, status=status.HTTP_404_NOT_FOUND)
 
