@@ -621,24 +621,6 @@ def examinformationUpdate(request, pk):
     examinformation = Examinformation.objects.get(examinfoid=pk)
     file = request.FILES['file'] if 'file' in request.FILES else None
     if file == None:
-        examinfo = {
-            "examid" : request.data['examid'],
-            "stdemail" : None,
-            "stdid" : None,
-            "subjectidstd" : None,
-            "examseatnumber" : None,
-            "setexaminfo" : None,
-            "section" : None,
-            "score" : None,
-            "correct" : None,
-            "wrong" : None,
-            "unresponsive" : None,
-            "itemanalysis": None,
-            "anschoicestd" : None,
-            "activatekey_exan" : None,
-            "imgansstd_path" : None,
-            "errorstype" : None
-        }
         data = request.data
         if examinformation.setexaminfo != request.data['setexaminfo']:
             try:
@@ -723,10 +705,10 @@ def examinformationUpdate(request, pk):
 
                     csv_path = fs.path('')+"/"+str(user.userid)+"/ans/"+str(exam.subid.subid)+"/"+str(request.data['examid'])+"/student_list/student_list.csv"
                     df = pd.read_csv(csv_path)
-                    df['รหัสนักศึกษา'] = df['รหัสนักศึกษา'].astype(str)
+                    df['Student ID'] = df['Student ID'].astype(str)
                     index = df[df['รหัสนักศึกษา'] == valid[1]].index
                     err_std = "ไม่พบรหัสนักศึกษาในรายชื่อ" if index.empty else ''
-                    examinfo['stdemail'] = df['email'][index[0]] if not index.empty else None
+                    examinfo['stdemail'] = df['Email'][index[0]] if not index.empty else None
 
                     try:
                         queryset = Examanswers.objects.get(examid=request.data['examid'], examnoanswers=valid[5])
@@ -836,10 +818,10 @@ def examinformationUploadPaper(request):
 
                     csv_path = fs.path('')+"/"+str(user.userid)+"/ans/"+str(exam.subid.subid)+"/"+str(request.data['examid'])+"/student_list/student_list.csv"
                     df = pd.read_csv(csv_path)
-                    df['รหัสนักศึกษา'] = df['รหัสนักศึกษา'].astype(str)
-                    index = df[df['รหัสนักศึกษา'] == valid[1]].index
+                    df['Student ID'] = df['Student ID'].astype(str)
+                    index = df[df['Student ID'] == valid[1]].index
                     err_std = "ไม่พบรหัสนักศึกษาในรายชื่อ" if index.empty else ''
-                    examinfo['stdemail'] = df['email'][index[0]] if not index.empty else None
+                    examinfo['stdemail'] = df['Email'][index[0]] if not index.empty else None
 
                     try:
                         queryset = Examanswers.objects.get(examid=request.data['examid'], examnoanswers=valid[5])
@@ -895,6 +877,25 @@ def examinformationUploadPaper(request):
     exam.sequencesteps = '4'
     exam.save()
     return Response(res_dict, status=status.HTTP_201_CREATED)
+
+@api_view(['GET'])
+def examinformationResult(request, pk):
+    user = User.objects.get(userid=request.data['userid'])
+    try:
+        exam = Exam.objects.get(examid=pk)
+    except Exam.DoesNotExist:
+        return Response(exam_notfound, status=status.HTTP_404_NOT_FOUND)
+    queryset = Examinformation.objects.filter(examid=pk)
+    serializer = ExaminformationSerializer(queryset, many=True)
+    fs = FileSystemStorage()
+    csv_path = fs.path('')+"/"+str(user.userid)+"/ans/"+str(exam.subid.subid)+"/"+str(exam.examid)+"/student_list/student_list.csv"
+    if os.path.exists(csv_path):
+        csv_result_path = fs.path('')+"/"+str(user.userid)+"/ans/"+str(exam.subid.subid)+"/"+str(exam.examid)+"/result/"
+        df = pd.DataFrame(csv_path)
+        df = df.drop(['email'])
+        df.to_csv(csv_result_path+"result.csv", index=False)
+    else:
+        return Response({"err" : "ไม่พบไฟล์รายชื่อนักศึกษา"}, status=status.HTTP_404_NOT_FOUND)
 
 ##########################################################################################
 #- chapter
