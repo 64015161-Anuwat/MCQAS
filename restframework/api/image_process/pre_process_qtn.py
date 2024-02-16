@@ -7,15 +7,18 @@ import sys
 
 def pre_process_qtn(srcpath, dstpath, filename):
     try:
-        print(filename)
+        # print(filename)
         error = "ไม่พบกรอบ หรือ QRcode ของแบบสอบถามที่ไฟล์ : "+filename
         isExist = os.path.exists(dstpath)
         if isExist == False:
             os.mkdir(dstpath)
 
         img = cv2.imread(srcpath+filename)
-        gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        kernel = np.ones((5,5),np.uint8)
+        img1 = cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)
+        gray_img = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
         ret, thresh = cv2.threshold(gray_img, 150, 255, cv2.THRESH_BINARY_INV)
+        cv2.imwrite("1.jpg", img1)
         # blurred = cv2.GaussianBlur(gray_img, (5, 5), 0)
         # edged = cv2.Canny(blurred, 30, 100)
         height, width, ch = img.shape
@@ -100,11 +103,11 @@ def pre_process_qtn(srcpath, dstpath, filename):
         for i in range(4):
             hist_mask = cv2.calcHist([th], [0], mask[i], [2], [0,256])
             # if hist_mask[0] > 2800 and hist_mask[0] < 4800:
-            print(hist_mask[0])
+            # print(hist_mask[0])
             if hist_mask[0] > 400 and hist_mask[0] < 950:
                 rt = i
                 havecon = True
-        print("=====================================")
+        # print("=====================================")
         if havecon == True:
             if rt == 0 :
                 rotation = -90

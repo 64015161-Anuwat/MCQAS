@@ -2,6 +2,8 @@ import os
 import json
 from datetime import datetime, timedelta
 import time
+from django.conf import Settings
+from keyboard import send
 import pandas as pd
 from rest_framework import status, viewsets, permissions, routers
 from rest_framework.decorators import api_view
@@ -37,6 +39,7 @@ def overview(request):
         'user': {
             'GET    - List': '/user/',
             'POST   - Create': '/user/create/',
+            'POST   - VerifyEmail': '/user/verify/email/<str:e_kyc>/',
             'GET    - Detail': '/user/detail/<str:pk>/',
             'PUT    - Update': '/user/update/<str:pk>/',
             'DELETE - Delete': '/user/delete/<str:pk>/',
@@ -160,6 +163,17 @@ def setDatetime(day):
     datetime_ = datetime.strftime(datetime_, "%Y-%m-%dT%H:%M:%S+07:00")
     return datetime_
 
+#- Sendmail
+from django.core.mail import EmailMultiAlternatives
+from django.core.mail import send_mail
+from django.conf import settings
+def sendmail(subject, message, recipient_list):
+    send_mail(subject, 
+              message, 
+              settings.EMAIL_HOST_USER, 
+              recipient_list)
+    return True
+
 ##########################################################################################
 #- Update
 @api_view(['PUT'])
@@ -195,12 +209,29 @@ def userCreate(request):
     data['password'] = hashed_password
     data['salt'] = salt
     data['createtimeuser'] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S+07:00")
+
     serializer = UserSerializer(data=data)
     if serializer.is_valid():
         serializer.save()
+        if 'googleid' not in data or data['googleid'] == '':
+            sendmail("ยืนยันอีเมลบัญชี MCQAS", 
+                     f"สวัสดี, คุณ {data['fullname']}\nคลิกลิงค์นี้เพื่อทำการยืนยันอีเมลบัญชี MCQAS : {request.data['url']}verify/{data['e_kyc']}/", 
+                     [data['email']])
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     else:
         return Response({"err" : serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+    
+@api_view(['POST'])
+def userVerifyEmail(request, e_kyc):
+    try:
+        user = User.objects.get(e_kyc=e_kyc)
+    except User.DoesNotExist:
+        return Response(user_notfound, status=status.HTTP_404_NOT_FOUND)
+    data = {"e_kyc" : "1"}
+    serializer = UserSerializer(instance=user, data=data)
+    if serializer.is_valid():
+        serializer.save()
+    return Response({"msg" : "ยืนยันอีเมลสำเร็จ"}, status=status.HTTP_200_OK)
 
 @api_view(['PUT'])
 def userUpdate(request, pk):
@@ -248,26 +279,29 @@ def userLogin(request):
     password = request.data['password']
     queryset = User.objects.filter(email=email)
     if queryset.count() > 0:
-        salt = queryset[0].salt
-        if verify_password(password, salt, queryset[0].password) == True:
-            return Response({
-                "userid" : queryset[0].userid,
-                "email" : queryset[0].email,
-                "fullname" : queryset[0].fullname,
-                "googleid" : queryset[0].googleid,
-                "usageformat" : queryset[0].usageformat,
-                "e_kyc" : queryset[0].e_kyc,
-                "typesid" : queryset[0].typesid.typesid,
-            }, status=status.HTTP_200_OK)
+        if queryset[0].e_kyc == '1':
+            salt = queryset[0].salt
+            if verify_password(password, salt, queryset[0].password) == True:
+                return Response({
+                    "userid" : queryset[0].userid,
+                    "email" : queryset[0].email,
+                    "fullname" : queryset[0].fullname,
+                    "googleid" : queryset[0].googleid,
+                    "usageformat" : queryset[0].usageformat,
+                    "e_kyc" : queryset[0].e_kyc,
+                    "typesid" : queryset[0].typesid.typesid,
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({"err" : "อีเมลหรือรหัสผ่านไม่ถูกต้อง"}, status=status.HTTP_401_UNAUTHORIZED)
         else:
-            return Response({"err" : "อีเมลหรือรหัสผ่านไม่ถูกต้อง"}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({"err" : "อีเมลนี้ยังไม่ได้ทำการยืนยัน กรุณาตรวจสอบเมลเพื่อทำการยืนยัน"}, status=status.HTTP_401_UNAUTHORIZED)
     else:
         return Response({"err" : "ไม่พบอีเมลนี้ในระบบ"}, status=status.HTTP_401_UNAUTHORIZED)
 
 @api_view(['POST'])
 def userLoginGoogle(request):
     googleid = request.data['googleid']
-    queryset = User.objects.filter(googleid=googleid)
+    queryset = User.objects.filter(googleid=googleid, e_kyc='1')
     if queryset.count() > 0:
         return Response({
                 "userid" : queryset[0].userid,
@@ -337,7 +371,7 @@ def examUpdate(request, pk):
     if 'reset_logo' in request.data:
         data['imganswersheetformat_path'] = request.build_absolute_uri("/media/original_answersheet/")
     try:
-        exam = Exam.objects.get(examid=pk, userid=data['userid'])
+        exam = Exam.objects.get(examid=pk)
     except Exam.DoesNotExist:
         return Response(exam_notfound, status=status.HTTP_404_NOT_FOUND)
     serializer = ExamSerializer(instance=exam, data=request.data)
@@ -587,7 +621,37 @@ def examinformationUpdate(request, pk):
     examinformation = Examinformation.objects.get(examinfoid=pk)
     file = request.FILES['file'] if 'file' in request.FILES else None
     if file == None:
+        examinfo = {
+            "examid" : request.data['examid'],
+            "stdemail" : None,
+            "stdid" : None,
+            "subjectidstd" : None,
+            "examseatnumber" : None,
+            "setexaminfo" : None,
+            "section" : None,
+            "score" : None,
+            "correct" : None,
+            "wrong" : None,
+            "unresponsive" : None,
+            "itemanalysis": None,
+            "anschoicestd" : None,
+            "activatekey_exan" : None,
+            "imgansstd_path" : None,
+            "errorstype" : None
+        }
         data = request.data
+        if examinformation.setexaminfo != request.data['setexaminfo']:
+            try:
+                examanswers = Examanswers.objects.get(examid=request.data['examid'], examnoanswers=request.data['setexaminfo'])
+            except Examanswers.DoesNotExist:
+                return Response({"err" : "ไม่พบเฉลยข้อสอบ"}, status=status.HTTP_404_NOT_FOUND)
+            ans = chk_ans(examinformation.anschoicestd, exam.numberofexams, examanswers.choiceanswers, examanswers.scoringcriteria)
+            data['score'] = ans[4]
+            data['correct'] = ans[5]
+            data['wrong'] = ans[6]
+            data['unresponsive'] = ans[8]
+            data['itemanalysis'] = ans[9]
+            data['errorstype'] = ans[0]
         serializer = ExaminformationSerializer(instance=examinformation, data=data)
         if serializer.is_valid():
             serializer.save()
@@ -1424,9 +1488,9 @@ def queinformationUploadPaper(request):
                 proc = process_qtn(pre_path, part_1_path, part_3_path,"pre_"+file.name, p1_answer_format, format_part_1, format_part_2)
 
                 if proc[0][0]:
-                    print("proc : ", proc)
+                    # print("proc : ", proc)
                     valid = chk_validate_qtn(proc[1], proc[2])
-                    print("valid : ", valid)
+                    # print("valid : ", valid)
                     queinformation_data['ansquehead'] = valid[1]
                     queinformation_data['ansquetopic'] = valid[2]
 
@@ -1711,3 +1775,4 @@ def subjectDelete(request, pk):
     return Response({"msg" : "วิชาจะถูกลบในวันที่และเวลา", "deletetime": data['deletetimesubject']}, status=status.HTTP_200_OK)
 
 ##########################################################################################
+

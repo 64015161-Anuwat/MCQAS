@@ -78,7 +78,7 @@ def chk_validate_ans(stdid, sec_, seatid, subid, exid, ans):
 
         if ex_check != None :
             ex_id = None
-            ex_check = "มีคำตอบมากกว่า 1 คำตอบในบางคอลัมน์ที่รหัสข้อสอบ"
+            ex_check = "มีคำตอบมากกว่า 1 คำตอบในบางคอลัมน์ที่ชุดข้อสอบ"
         # elif ex_id == '':
         #     ex_check = "ไม่พบรหัสข้อสอบ"
 

@@ -119,7 +119,7 @@ def pre_process_ans(srcpath, dstpath, filename):
             # cv2.waitKey(1000)
             # cv2.destroyAllWindows()
             hist_mask = cv2.calcHist([th], [0], mask[i], [2], [0, 256])
-            if hist_mask[0] > 400 and hist_mask[0] < 700:
+            if hist_mask[0] > 400 and hist_mask[0] < 1000:
                 rt = i
                 havecon = True
 

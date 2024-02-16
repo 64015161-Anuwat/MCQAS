@@ -23,6 +23,7 @@ urlpatterns = [
     path('user/', views.userList, name='User-List'),
     path('user/detail/<str:pk>/', views.userDetail, name='User-Detail'),
     path('user/create/', views.userCreate, name='User-Create'),
+    path('verify/email/<str:e_kyc>/', views.userVerifyEmail, name='User-Verify-Email'),
     path('user/update/<str:pk>/', views.userUpdate, name='User-Update'),
     path('user/delete/<str:pk>/', views.userDelete, name='User-Delete'),
     path('user/duplicate/email/<str:pk>/', views.userDuplicateEmail, name='User-Duplicate-Email'),
@@ -121,6 +122,6 @@ urlpatterns = [
     path('subject/update/<str:pk>/', views.subjectUpdate, name='Subject-Update'),
     path('subject/delete/<str:pk>/', views.subjectDelete, name='Subject-Delete'),
     ############################################################
-    path('update/', views.update, name='Update')
+    path('update/', views.update, name='Update'),
     ############################################################
 ]
