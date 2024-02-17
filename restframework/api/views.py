@@ -81,6 +81,7 @@ def overview(request):
             'PUT    - Update': '/examinformation/update/<str:pk>/',
             'DELETE - Delete': '/examinformation/delete/<str:pk>/',
             'POST   - UploadPaper': '/examinformation/upload/paper/',
+            'GET    - Result': '/examinformation/result/<str:pk>/',
         },
         'chapter': {
             'GET    - List': '/chapter/',
@@ -628,19 +629,24 @@ def examinformationUpdate(request, pk):
     file = request.FILES['file'] if 'file' in request.FILES else None
     if file == None:
         data = request.data
-        if examinformation.setexaminfo != request.data['setexaminfo']:
+        data_ = {}
+        data_['stdid'] = data['stdid']
+        data_['subjectidstd'] = data['subjectidstd']
+        data_['setexaminfo'] = data['setexaminfo']
+        data_['examid'] = data['examid']
+        if examinformation.setexaminfo != data_['setexaminfo']:
             try:
-                examanswers = Examanswers.objects.get(examid=request.data['examid'], examnoanswers=request.data['setexaminfo'])
+                examanswers = Examanswers.objects.get(examid=data_['examid'], examnoanswers=data_['setexaminfo'])
             except Examanswers.DoesNotExist:
                 return Response({"err" : "ไม่พบเฉลยข้อสอบ"}, status=status.HTTP_404_NOT_FOUND)
             ans = chk_ans(examinformation.anschoicestd, exam.numberofexams, examanswers.choiceanswers, examanswers.scoringcriteria)
-            data['score'] = ans[4]
-            data['correct'] = ans[5]
-            data['wrong'] = ans[6]
-            data['unresponsive'] = ans[8]
-            data['itemanalysis'] = ans[9]
-            data['errorstype'] = ans[0]
-        serializer = ExaminformationSerializer(instance=examinformation, data=data)
+            data_['score'] = ans[4]
+            data_['correct'] = ans[5]
+            data_['wrong'] = ans[6]
+            data_['unresponsive'] = ans[8]
+            data_['itemanalysis'] = ans[9]
+            data_['errorstype'] = ans[0]
+        serializer = ExaminformationSerializer(instance=examinformation, data=data_)
         if serializer.is_valid():
             serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -959,7 +965,7 @@ def examinformationResult(request, pk):
                 data_proc[3].append(round(np.median(data_row[i]), 2))
                 data_proc[4].append(round(np.var(data_row[i]), 2))
                 data_proc[5].append(round(np.std(data_row[i]), 2))
-                data_proc[6].append(round(np.std(data_row[i]) / np.average(data_row[i]) * 100, 2))
+                data_proc[6].append(round(np.std(data_row[i])/np.average(data_row[i])*100, 2))
                 data_proc[7].append(np.sum(data_row[i]))
 
             # Write the updated data back to the CSV file
