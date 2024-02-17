@@ -99,6 +99,7 @@ urlpatterns = [
     ############################################################
     path('request/', views.requestList, name='Request-List'),
     path('request/detail/<str:pk>/', views.requestDetail, name='Request-Detail'),
+    path('request/detail/user/<str:pk>/', views.requestDetail, name='Request-Detail-User'),
     path('request/create/', views.requestCreate, name='Request-Create'),
     path('request/update/<str:pk>/', views.requestUpdate, name='Request-Update'),
     path('request/delete/<str:pk>/', views.requestDelete, name='Request-Delete'),

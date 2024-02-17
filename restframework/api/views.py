@@ -8,8 +8,6 @@ import json
 from datetime import datetime, timedelta
 import time
 
-from django.conf import Settings
-from keyboard import send
 import pandas as pd
 from rest_framework import status, viewsets, permissions, routers
 from rest_framework.decorators import api_view
@@ -133,6 +131,7 @@ def overview(request):
             'GET    - List': '/request/',
             'POST   - Create': '/request/create/',
             'GET    - Detail': '/request/detail/<str:pk>/',
+            'GET    - DetailByUserid' : '/request/detail/user/<str:pk>/',
             'PUT    - Update': '/request/update/<str:pk>/',
             'DELETE - Delete': '/request/delete/<str:pk>/',
         },
@@ -1643,9 +1642,20 @@ def requestDetail(request, pk):
     serializer = RequestSerializer(queryset, many=False)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
+@api_view(['GET'])
+def requestDetailByUserid(request, pk):
+    try:
+        queryset = Request.objects.filter(userid=pk)
+    except Request.DoesNotExist:
+        return Response(request_notfound, status=status.HTTP_404_NOT_FOUND)
+    
+    serializer = RequestSerializer(queryset, many=False)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
 @api_view(['POST'])
 def requestCreate(request):
     user = User.objects.get(userid=request.data['userid'])
+    request_indb = Request.objects.filter(userid=request.data['userid'])
     file = request.FILES['file']
     fs = FileSystemStorage()
     media_path = fs.path('')+"/"+str(user.userid)+"/request/"
@@ -1661,7 +1671,19 @@ def requestCreate(request):
 
 @api_view(['PUT'])
 def requestUpdate(request, pk):
+    user = User.objects.get(userid=request.data['userid'])
     request_ = Request.objects.get(requestid=pk)
+    file = request.FILES['file']
+    fs = FileSystemStorage()
+    media_path = fs.path('')+"/"+str(user.userid)+"/request/"
+    os.makedirs(media_path, exist_ok=True)
+    for filename in os.listdir(media_path):
+        if os.path.isfile(os.path.join(media_path, filename)):
+            os.remove(os.path.join(media_path, filename))
+    fs.save(media_path+"request.jpg", file)
+    data = request.data
+    data['imgrequest_path'] = request.build_absolute_uri("/media/"+str(user.userid)+"/request/request.jpg")
+    data['status_request'] = "1"
     serializer = RequestSerializer(instance=request_, data=request.data)
     if serializer.is_valid():
         serializer.save()
