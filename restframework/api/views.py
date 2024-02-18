@@ -4,12 +4,13 @@ import csv
 import shutil
 import os
 import json
+import math
 
 from datetime import datetime, timedelta
 import time
 
 import pandas as pd
-from rest_framework import status, viewsets, permissions, routers
+from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
@@ -687,6 +688,9 @@ def examinformationUpdate(request, pk):
             examinfo['imgansstd_path'] = img_link
 
             if pre == True:
+                fs.save(pre_path+file.name, file)
+                img_link = request.build_absolute_uri("/media"+default_path+"pre/"+file.name)
+                examinfo['imgansstd_path'] = img_link
                 data = process_ans(pre_path, "pre_"+file.name, exam.numberofexams, debug=False)
                 error_data = ''
                 for i in range(0, len(data[0])):
@@ -796,10 +800,12 @@ def examinformationUploadPaper(request):
         if file.name.lower().endswith('.jpg') or file.name.lower().endswith('.jpeg'):
             fs.save(ori_path+file.name, file)
             img_link = request.build_absolute_uri("/media"+default_path+"original/"+file.name)
-            pre = pre_process_ans(ori_path, pre_path, file.name)
             examinfo['imgansstd_path'] = img_link
+            pre = pre_process_ans(ori_path, pre_path, file.name)
 
             if pre == True:
+                img_link = request.build_absolute_uri("/media"+default_path+"preprocess/pre_"+file.name)
+                examinfo['imgansstd_path'] = img_link
                 data = process_ans(pre_path, "pre_"+file.name, exam.numberofexams, debug=False)
                 error_data = ''
                 for i in range(0, len(data[0])):
@@ -889,94 +895,145 @@ def examinformationUploadPaper(request):
     exam.save()
     return Response(res_dict, status=status.HTTP_201_CREATED)
 
-@api_view(['GET'])
+@api_view(['POST'])
 def examinformationResult(request, pk):
     user = User.objects.get(userid=request.data['userid'])
     try:
         exam = Exam.objects.get(examid=pk)
     except Exam.DoesNotExist:
         return Response(exam_notfound, status=status.HTTP_404_NOT_FOUND)
-    queryset = Examinformation.objects.filter(examid=pk)
+    queryset = Examinformation.objects.filter(examid=pk).order_by('-score')
     examinfo_serializer = ExaminformationSerializer(queryset, many=True)
     fs = FileSystemStorage()
     csv_path = fs.path('')+"/"+str(user.userid)+"/ans/"+str(exam.subid.subid)+"/"+str(exam.examid)+"/student_list/student_list.csv"
     if os.path.exists(csv_path):
+        # Result Score
         csv_result_path = fs.path('')+"/"+str(user.userid)+"/ans/"+str(exam.subid.subid)+"/"+str(exam.examid)+"/result/"
         os.makedirs(csv_result_path, exist_ok=True)
         csv_result_path += "result_student_list.csv"
-        if os.path.exists(csv_result_path) == False:
-            # Copy the original file to the result directory with a new name
-            shutil.copyfile(csv_path, os.path.join(csv_result_path))
+        # Copy the original file to the result directory with a new name
+        shutil.copyfile(csv_path, os.path.join(csv_result_path))
 
-            data_proc = [
-                ['', '', 'Min :'],
-                ['', '', 'Max :'],
-                ['', '', 'Average :'],
-                ['', '', 'Median :'],
-                ['', '', 'Variance :'],
-                ['', '', 'S.D :'],
-                ['', '', 'C.V.(%) :'],
-                ['', '', 'Total :'],
-            ]
+        data_proc = [
+            ['', '', 'Min :'],
+            ['', '', 'Max :'],
+            ['', '', 'Average :'],
+            ['', '', 'Median :'],
+            ['', '', 'Variance :'],
+            ['', '', 'S.D :'],
+            ['', '', 'C.V.(%) :'],
+            ['', '', 'Total :'],
+        ]
 
-            # Read the CSV file into a list of lists
-            inFile = []
-            with open(csv_path, 'r', newline='', encoding='utf-8') as csvfile:
-                reader = csv.reader(csvfile)
-                for row in reader:
-                    inFile.append(row.copy())
+        # Read the CSV file into a list of lists
+        inFile = []
+        with open(csv_path, 'r', newline='', encoding='utf-8-sig') as csvfile:
+            reader = csv.reader(csvfile)
+            for row in reader:
+                inFile.append(row.copy())
 
-            # Find and remove the column named 'อีเมล' if it exists
-            if 'อีเมล' in inFile[0]:
-                column_to_remove_index = inFile[0].index('อีเมล')
-                for row in inFile:
-                    del row[column_to_remove_index]
+        # Find and remove the column named 'อีเมล' if it exists
+        if 'อีเมล' in inFile[0]:
+            column_to_remove_index = inFile[0].index('อีเมล')
+            for row in inFile:
+                del row[column_to_remove_index]
 
-            # Add new columns to the header row
-            inFile[0].extend(['จำนวนข้อที่ตอบถูก', 'จำนวนข้อที่ตอบผิด', 'จำนวนข้อที่ไม่ตอบ', 'คะแนน'])
+        # Add new columns to the header row
+        inFile[0].extend(['จำนวนข้อที่ตอบถูก', 'จำนวนข้อที่ตอบผิด', 'จำนวนข้อที่ไม่ตอบ', 'คะแนน'])
 
-            # Add data_proc to inFile
-            inFile.extend(data_proc)
+        # Add data_proc to inFile
+        inFile.extend(data_proc)
 
-            correct = []
-            wrong = []
-            no_ans = []
-            score = []
+        correct = []
+        wrong = []
+        no_ans = []
+        score = []
 
-            data_row = [correct, wrong, no_ans, score]
+        data_row = [correct, wrong, no_ans, score]
 
-            for i in examinfo_serializer.data:
-                for ii in inFile[1:]:
-                    if ii[0] == i['stdid']:
-                        ii.extend([i['correct'], 
-                                   i['wrong'], 
-                                   i['unresponsive'], 
-                                   i['score']])
-                        data_row[0].append(int(i['correct']))
-                        data_row[1].append(int(i['wrong']))
-                        data_row[2].append(int(i['unresponsive']))
-                        data_row[3].append(float(i['score']))
+        for i in examinfo_serializer.data:
+            for ii in inFile[1:]:
+                if ii[0] == i['stdid']:
+                    ii.extend([i['correct'], 
+                                i['wrong'], 
+                                i['unresponsive'], 
+                                i['score']])
+                    data_row[0].append(int(i['correct']))
+                    data_row[1].append(int(i['wrong']))
+                    data_row[2].append(int(i['unresponsive']))
+                    data_row[3].append(float(i['score']))
 
-            for i in range(len(data_row)):
-                data_proc[0].append(np.min(data_row[i]))
-                data_proc[1].append(np.max(data_row[i]))
-                data_proc[2].append(round(np.average(data_row[i]), 2))
-                data_proc[3].append(round(np.median(data_row[i]), 2))
-                data_proc[4].append(round(np.var(data_row[i]), 2))
-                data_proc[5].append(round(np.std(data_row[i]), 2))
-                data_proc[6].append(round(np.std(data_row[i])/np.average(data_row[i])*100, 2))
-                data_proc[7].append(np.sum(data_row[i]))
+        for i in range(len(data_row)):
+            data_proc[0].append(np.min(data_row[i]))
+            data_proc[1].append(np.max(data_row[i]))
+            data_proc[2].append(round(np.average(data_row[i]), 2))
+            data_proc[3].append(round(np.median(data_row[i]), 2))
+            data_proc[4].append(round(np.var(data_row[i]), 2))
+            data_proc[5].append(round(np.std(data_row[i]), 2))
+            data_proc[6].append(round(np.std(data_row[i])/np.average(data_row[i])*100, 2))
+            data_proc[7].append(np.sum(data_row[i]))
 
-            # Write the updated data back to the CSV file
-            with open(csv_result_path, 'w', newline='', encoding='utf-8') as csvfile:
-                writer = csv.writer(csvfile)
-                for row in inFile:
-                    writer.writerow(row)
-            return Response({"link_result": request.build_absolute_uri("/media/"+str(user.userid)+"/ans/"+str(exam.subid.subid)+"/"+str(exam.examid)+"/result/result_student_list.csv")}, status=status.HTTP_200_OK)
-        else:
-            return Response({"link_result": request.build_absolute_uri("/media/"+str(user.userid)+"/ans/"+str(exam.subid.subid)+"/"+str(exam.examid)+"/result/result_student_list.csv")}, status=status.HTTP_200_OK)
+        # Write the updated data back to the CSV file
+        with open(csv_result_path, 'w', newline='', encoding='utf-8') as csvfile:
+            writer = csv.writer(csvfile)
+            for row in inFile:
+                writer.writerow(row)
+        result_csv_path = request.build_absolute_uri("/media/"+str(user.userid)+"/ans/"+str(exam.subid.subid)+"/"+str(exam.examid)+"/result/result_student_list.csv")
+        
+        # Analysis Data
+        data = [["ข้อที่", "ค่าความยาก", "แปลผลค่าความยาก", "ค่าอำนาจจำแนก", "แปลผลค่าอำนาจจำแนก"]]
+        num_group = math.ceil(len(examinfo_serializer.data)/100*27)
+        analys = [item['itemanalysis'].split(',') for item in examinfo_serializer.data]
+        for i in range(int(exam.numberofexams)):
+            choice_data = []
+            difficulty = 0
+            discrimination = 0
+            high_group = 0
+            low_group = 0
+            choice_data.append(i+1)
+            for ii in range(len(analys)):
+                difficulty += int(analys[ii][i])
+                if ii < num_group: high_group += int(analys[ii][i])
+                elif ii >= len(analys)-num_group: low_group += int(analys[ii][i])
+
+            difficulty = round(difficulty/len(examinfo_serializer.data), 2)
+            choice_data.append(difficulty)
+            if difficulty < 0.2: choice_data.append("ยากมาก ( ควรปรับปรุงหรือตัดทิ้ง )")
+            elif difficulty < 0.4: choice_data.append("ค่อนข้างยาก")
+            elif difficulty < 0.6: choice_data.append("ยากพอเหมาะ")
+            elif difficulty < 0.8: choice_data.append("ค่อนข้างง่าย")
+            else: choice_data.append("ง่ายมาก ( ควรปรับปรุงหรือตัดทิ้ง )")
+
+            discrimination = round((high_group-low_group)/(num_group*2), 2)
+            choice_data.append(discrimination)
+            if discrimination < 0: choice_data.append("จำแนกไม่ได้ ( ควรตัดทิ้ง)")
+            elif discrimination < 0.2: choice_data.append("จำแนกไม่ค่อยได้ (ควรปรับปรุง)")
+            elif discrimination < 0.4: choice_data.append("จำแนกได้บ้าง")
+            elif discrimination < 0.6: choice_data.append("จำแนกได้ปานกลาง")
+            elif discrimination < 0.8: choice_data.append("จำแนกดี")
+            elif discrimination < 1: choice_data.append("จำแนกดีมาก")
+            else: choice_data.append("จำแนกดีเลิศ")
+
+            data.append(choice_data)
+
+        fs = FileSystemStorage()
+        csv_itemanalysis_path = fs.path('')+"/"+str(user.userid)+"/ans/"+str(exam.subid.subid)+"/"+str(exam.examid)+"/result/item_analysis.csv"
+        # Write the data to the CSV file
+        with open(csv_itemanalysis_path, 'w', newline='', encoding='utf-8-sig') as csvfile:
+            writer = csv.writer(csvfile)
+            for row in data:
+                writer.writerow(row)
+        analysis_csv_path = request.build_absolute_uri("/media/"+str(user.userid)+"/ans/"+str(exam.subid.subid)+"/"+str(exam.examid)+"/result/item_analysis.csv")
+        
+        exam.result_csv_path = result_csv_path
+        exam.analysis_csv_path = analysis_csv_path
+        exam.sequencesteps = '6'
+        exam.save()
+        return Response({"msg" : "วิเคราะห์ผลเสร็จสิ้น"}, status=status.HTTP_200_OK)
     else:
         return Response({"err" : "ไม่พบไฟล์รายชื่อนักศึกษา"}, status=status.HTTP_404_NOT_FOUND)
+    
+
 
 ##########################################################################################
 #- chapter

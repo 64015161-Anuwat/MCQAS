@@ -40,6 +40,8 @@ class Exam(models.Model):
     answersheetformat = models.TextField(db_column='AnswerSheetFormat', blank=True, null=True)  # Field name made lowercase.
     imganswersheetformat_path = models.TextField(db_column='ImgAnswerSheetformat_path', blank=True, null=True)  # Field name made lowercase.
     std_csv_path = models.TextField(db_column='Std_csv_path', blank=True, null=True)  # Field name made lowercase.
+    result_csv_path = models.TextField(db_column='Result_csv_path', blank=True, null=True)  # Field name made lowercase.
+    analysis_csv_path = models.TextField(db_column='Analysis_csv_path', blank=True, null=True)  # Field name made lowercase.
     sequencesteps = models.TextField(db_column='SequenceSteps', blank=True, null=True)  # Field name made lowercase.
     showscores = models.IntegerField(db_column='ShowScores', blank=True, null=True)  # Field name made lowercase.
     sendemail = models.IntegerField(db_column='SendEmail', blank=True, null=True)  # Field name made lowercase.
@@ -108,6 +110,8 @@ class Queinformation(models.Model):
     quesheetid = models.ForeignKey('Quesheet', models.DO_NOTHING, db_column='QueSheetID', blank=True, null=True)  # Field name made lowercase.
     ansquehead = models.TextField(db_column='AnsQueHead', blank=True, null=True)  # Field name made lowercase.
     ansquetopic = models.TextField(db_column='AnsQueTopic', blank=True, null=True)  # Field name made lowercase.
+    ansother = models.TextField(db_column='AnsOther', blank=True, null=True)  # Field name made lowercase.
+    additionalsuggestions = models.TextField(db_column='Additionalsuggestions', blank=True, null=True)  # Field name made lowercase.
     imgansstd_path = models.TextField(db_column='ImgAnsStd_path', blank=True, null=True)  # Field name made lowercase.
     status_queinfo = models.TextField(db_column='Status_QueInfo', blank=True, null=True)  # Field name made lowercase.
     errorstype = models.TextField(db_column='ErrorsType', blank=True, null=True)  # Field name made lowercase.
@@ -129,7 +133,7 @@ class Quesheet(models.Model):
     datetimestart = models.DateTimeField(db_column='DateTimeStart', blank=True, null=True)  # Field name made lowercase.
     datetimeend = models.DateTimeField(db_column='DateTimeEnd', blank=True, null=True)  # Field name made lowercase.
     sequencesteps = models.TextField(db_column='SequenceSteps', blank=True, null=True)  # Field name made lowercase.
-    statusquesheet = models.TextField(db_column='statusQueSheet', blank=True, null=True)  # Field name made lowercase.
+    statusquesheet = models.TextField(db_column='StatusQueSheet', blank=True, null=True)  # Field name made lowercase.
     deletetimequesheet = models.DateTimeField(db_column='DeleteTimeQueSheet', blank=True, null=True)  # Field name made lowercase.
     createtimequesheet = models.DateTimeField(db_column='CreateTimeQueSheet', blank=True, null=True)  # Field name made lowercase.
 
@@ -206,8 +210,8 @@ class User(models.Model):
     email = models.CharField(db_column='Email', max_length=255, blank=True, null=True)  # Field name made lowercase.
     fullname = models.TextField(db_column='FullName', blank=True, null=True)  # Field name made lowercase.
     password = models.CharField(db_column='Password', max_length=255, blank=True, null=True)  # Field name made lowercase.
-    salt = models.CharField(max_length=64, blank=True, null=True)
-    googleid = models.TextField(db_column='googleId', blank=True, null=True)  # Field name made lowercase.
+    salt = models.CharField(db_column='Salt', max_length=64, blank=True, null=True)  # Field name made lowercase.
+    googleid = models.TextField(db_column='GoogleId', blank=True, null=True)  # Field name made lowercase.
     job = models.TextField(db_column='Job', blank=True, null=True)  # Field name made lowercase.
     department = models.TextField(db_column='Department', blank=True, null=True)  # Field name made lowercase.
     faculty = models.TextField(db_column='Faculty', blank=True, null=True)  # Field name made lowercase.
