@@ -135,9 +135,10 @@ def create_questionnaire_sheet(dstpath,head_1,detail1,detail2,part_1,part_2,qrco
         ########### circle
         for index_pt1,pt1 in enumerate(part1):
             for index_pt2,pt2 in enumerate(pt1):
-                if index_pt2!=0 :
-                    cv2.circle(img,(751+(400*(index_pt2-1)),650+(100*index_pt1)),16,cirtext,1)
-                    cv2.putText(img,str(index_pt2),(742+(400*(index_pt2-1)),660+(100*index_pt1)),cv2.FONT_HERSHEY_SIMPLEX,0.9,cirtext,1)
+                if pt2 != '':
+                    if index_pt2!=0 :
+                        cv2.circle(img,(751+(400*(index_pt2-1)),650+(100*index_pt1)),16,cirtext,1)
+                        cv2.putText(img,str(index_pt2),(742+(400*(index_pt2-1)),660+(100*index_pt1)),cv2.FONT_HERSHEY_SIMPLEX,0.9,cirtext,1)
 
 
 
@@ -212,7 +213,7 @@ def create_questionnaire_sheet(dstpath,head_1,detail1,detail2,part_1,part_2,qrco
             csub = 1
             for ch0 in range(len(part2[c0])):
                 if ch0 == 0 :
-                    if part2[c0][ch0] != "Nohead":
+                    if part2[c0][ch0] != "Nohead" and part2[c0][ch0] != "":
                         word = part2[c0][ch0]
                         word = str(word)
                         fonth1 = ImageFont.truetype(path+'newDB.ttf',fonth1_size)
@@ -256,51 +257,52 @@ def create_questionnaire_sheet(dstpath,head_1,detail1,detail2,part_1,part_2,qrco
                         fonth1_size = 60
                         c1+=1
                 else:
-                    word = part2[c0][ch0]
-                    word = str(word)
-                    fontsh1 = ImageFont.truetype(path+'_arisa.ttf',fontsh1_size)
-                    b1 = ""
-                    b2 = ""
-                    while int(fontsh1.font.getsize(word)[0][0]) > 1500 :
-                        if fontsh1_size <= 45:
-                            if45 = 1
-                            if len(part2) == 1:
-                                ch0+=1
-                            sp = [i for i in range(len(word)) if word.startswith(" ", i)]
-                            b1 = word
-                            word=word.replace(" ", "")
-                            a=sent_tokenize(word)
-                            n=len(a)
-                            while fontsh1.font.getsize(b1)[0][0] > 1500 :
-                                b1="".join(a[0:n])
-                                n-=1
+                    if part2[c0][ch0] != "":
+                        word = part2[c0][ch0]
+                        word = str(word)
+                        fontsh1 = ImageFont.truetype(path+'_arisa.ttf',fontsh1_size)
+                        b1 = ""
+                        b2 = ""
+                        while int(fontsh1.font.getsize(word)[0][0]) > 1500 :
+                            if fontsh1_size <= 45:
+                                if45 = 1
+                                if len(part2) == 1:
+                                    ch0+=1
+                                sp = [i for i in range(len(word)) if word.startswith(" ", i)]
+                                b1 = word
+                                word=word.replace(" ", "")
+                                a=sent_tokenize(word)
+                                n=len(a)
+                                while fontsh1.font.getsize(b1)[0][0] > 1500 :
+                                    b1="".join(a[0:n])
+                                    n-=1
+                                    for z in sp:
+                                        if z < len(b1):
+                                            b1 = b1[:z]+" "+b1[z:]
+
+                                b2 = "".join(a[n+1:len(a)])
                                 for z in sp:
-                                    if z < len(b1):
-                                        b1 = b1[:z]+" "+b1[z:]
+                                        if z < len(b1)+len(b2) and z > len(b1):
+                                            b2 = b2[:z-len(b1)]+" "+b2[z-len(b1):]
+                                b1+=" "
+                                b2+=" "
+                                break
+                            if if45 == 0:
+                                fontsh1_size -=1
+                                fontsh1 = ImageFont.truetype(path+'_arisa.ttf',fontsh1_size)
 
-                            b2 = "".join(a[n+1:len(a)])
-                            for z in sp:
-                                    if z < len(b1)+len(b2) and z > len(b1):
-                                        b2 = b2[:z-len(b1)]+" "+b2[z-len(b1):]
-                            b1+=" "
-                            b2+=" "
-                            break
-                        if if45 == 0:
-                            fontsh1_size -=1
-                            fontsh1 = ImageFont.truetype(path+'_arisa.ttf',fontsh1_size)
-
-                    if if45 > 0:
-                        draw.text((170,1353+(98*c1)),str(ch0)+". "+b1,black, font=fontsh1)
-                        draw.text((210,1396+(98*c1)),b2,black, font=fontsh1)
-                        if45 = 0
-                    else:
-                        word+=" "
-                        if len(part2) ==1:
-                            ch0+=1
-                        draw.text((170,1370+(98*c1)),str(csub)+". "+word,black, font=fontsh1)
-                        csub+=1
-                    fontsh1_size = 55	
-                    c1+=1
+                        if if45 > 0:
+                            draw.text((170,1353+(98*c1)),str(ch0)+". "+b1,black, font=fontsh1)
+                            draw.text((210,1396+(98*c1)),b2,black, font=fontsh1)
+                            if45 = 0
+                        else:
+                            word+=" "
+                            if len(part2) ==1:
+                                ch0+=1
+                            draw.text((170,1370+(98*c1)),str(csub)+". "+word,black, font=fontsh1)
+                            csub+=1
+                        fontsh1_size = 55	
+                        c1+=1
             c0+=1
 
         ########## part3

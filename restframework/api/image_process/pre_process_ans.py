@@ -19,6 +19,7 @@ def pre_process_ans(srcpath, dstpath, filename):
         img = img[10:img.shape[0]-10, 10:img.shape[1]-10]
         height, width, ch = img.shape
         gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        gray_img = cv2.GaussianBlur(gray_img, (5, 5), 0)
         # thresholding image
         thresh, th = cv2.threshold(gray_img, 150, 255, cv2.THRESH_BINARY_INV)
         kernel = np.ones((5, 5), np.uint8)

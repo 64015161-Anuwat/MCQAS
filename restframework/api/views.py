@@ -1676,6 +1676,39 @@ def queinformationUploadPaper(request):
     print("Result : ", len(result['result']))
     return Response(result, status=status.HTTP_201_CREATED)
 
+@api_view(['POST'])
+def queinformationResult(request, pk):
+    user = User.objects.get(userid=request.data['userid'])
+    try:
+        quesheet = Quesheet.objects.get(quesheetid=pk)
+        queheaddetails = Queheaddetails.objects.get(quesheetid=pk)
+        quetopicdetails = Quetopicdetails.objects.get(quesheetid=pk)
+    except Exam.DoesNotExist:
+        return Response(exam_notfound, status=status.HTTP_404_NOT_FOUND)
+    queryset = Queinformation.objects.filter(quesheetid=pk)
+    examinfo_serializer = QueinformationSerializer(queryset, many=True)
+    fs = FileSystemStorage()
+    csv_result_path = fs.path('')+"/"+str(user.userid)+"/qtn/"+str(quesheet.quesheetid)+"/result/"
+    os.makedirs(csv_result_path, exist_ok=True)
+    csv_result_path += "result.csv"
+
+    data = []
+    quehead_list = [queheaddetails.quehead1.split(','),
+                    queheaddetails.quehead2.split(','),
+                    queheaddetails.quehead3.split(','),
+                    queheaddetails.quehead4.split(','),
+                    queheaddetails.quehead5.split(',')]
+    part1_data = []
+    for i in range(len(quehead_list)):
+        for ii in range(len(quehead_list[i])):
+            if ii == 0:
+                part1_data.append([quehead_list[i][ii], "จำนวน",  "%", ""])
+            else:
+                part1_data.append()
+
+
+    return Response({"msg" : "วิเคราะห์ผลเสร็จสิ้น"}, status=status.HTTP_201_CREATED)
+
 ##########################################################################################
 #- Request
 request_notfound = {"err" : "ไม่พบข้อมูลคำร้องขอ"}
@@ -1701,13 +1734,12 @@ def requestDetail(request, pk):
 
 @api_view(['GET'])
 def requestDetailByUserid(request, pk):
-    try:
-        queryset = Request.objects.filter(userid=pk)
-    except Request.DoesNotExist:
+    queryset = Request.objects.filter(userid=pk)
+    if queryset.count() != 0:
+        serializer = RequestSerializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    else:
         return Response(request_notfound, status=status.HTTP_404_NOT_FOUND)
-    
-    serializer = RequestSerializer(queryset, many=False)
-    return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['POST'])
 def requestCreate(request):
