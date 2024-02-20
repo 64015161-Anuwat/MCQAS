@@ -55,6 +55,7 @@ urlpatterns = [
     path('examinformation/update/<str:pk>/', views.examinformationUpdate, name='Examinformation-Update'),
     path('examinformation/delete/<str:pk>/', views.examinformationDelete, name='Examinformation-Delete'),
     path('examinformation/upload/paper/', views.examinformationUploadPaper, name='Examinformation-Upload-Paper'),
+    path('examinformation/tableans/<str:pk>/', views.examinformationTableAns, name='Examinformation-TableAns'),
     path('examinformation/result/<str:pk>/', views.examinformationResult, name='Examinformation-Result'),
     ############################################################
     path('chapter/', views.chapterList, name='chapter-List'),

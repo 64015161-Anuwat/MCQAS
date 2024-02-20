@@ -80,7 +80,8 @@ def overview(request):
             'PUT    - Update': '/examinformation/update/<str:pk>/',
             'DELETE - Delete': '/examinformation/delete/<str:pk>/',
             'POST   - UploadPaper': '/examinformation/upload/paper/',
-            'GET    - Result': '/examinformation/result/<str:pk>/',
+            'GET    - TableAns': '/examinformation/tableans/<str:pk>/',
+            'POST   - Result': '/examinformation/result/<str:pk>/',
         },
         'chapter': {
             'GET    - List': '/chapter/',
@@ -127,6 +128,7 @@ def overview(request):
             'PUT    - Update': '/queinformation/update/<str:pk>/',
             'DELETE - Delete': '/queinformation/delete/<str:pk>/',
             'POST   - UploadPaper': '/queinformation/upload/paper/',
+            'POST   - Result': '/queinformation/result/<str:pk>/',
         },
         'request': {
             'GET    - List': '/request/',
@@ -403,7 +405,10 @@ def examDelete(request, pk):
 @api_view(['POST'])
 def examUploadCSV(request):
     file = request.FILES['file']
-    user = User.objects.get(userid=request.data['userid'])
+    try:
+        user = User.objects.get(userid=request.data['userid'])
+    except User.DoesNotExist:
+        return Response(user_notfound, status=status.HTTP_404_NOT_FOUND)
     if file.name.endswith('.csv'):
         exam = Exam.objects.get(examid=request.data['examid'])
         fs = FileSystemStorage()
@@ -429,7 +434,10 @@ def examUploadCSV(request):
 @api_view(['POST'])
 def examUploadLogo(request):
     file = request.FILES['file']
-    user = User.objects.get(userid=request.data['userid'])
+    try:
+        user = User.objects.get(userid=request.data['userid'])
+    except User.DoesNotExist:
+        return Response(user_notfound, status=status.HTTP_404_NOT_FOUND)
     if file.name.lower().endswith('.jpg') or file.name.lower().endswith('.jpeg') or file.name.lower().endswith('.png'):
         exam = Exam.objects.get(examid=request.data['examid'])
         fs = FileSystemStorage()
@@ -521,7 +529,10 @@ def examanswersDelete(request, pk):
 @api_view(['POST'])
 def examanswersUploadPaper(request):
     file = request.FILES['file']
-    user = User.objects.get(userid=request.data['userid'])
+    try:
+        user = User.objects.get(userid=request.data['userid'])
+    except User.DoesNotExist:
+        return Response(user_notfound, status=status.HTTP_404_NOT_FOUND)
     exam = Exam.objects.get(examid=request.data['examid'])
     if file.name.lower().endswith('.jpg') or file.name.lower().endswith('.jpeg') or file.name.lower().endswith('.png'):
         answers_ = ''
@@ -624,7 +635,10 @@ def examinformationCreate(request):
 
 @api_view(['PUT'])
 def examinformationUpdate(request, pk):
-    user = User.objects.get(userid=request.data['userid'])
+    try:
+        user = User.objects.get(userid=request.data['userid'])
+    except User.DoesNotExist:
+        return Response(user_notfound, status=status.HTTP_404_NOT_FOUND)
     exam = Exam.objects.get(examid=request.data['examid'])
     examinformation = Examinformation.objects.get(examinfoid=pk)
     file = request.FILES['file'] if 'file' in request.FILES else None
@@ -690,7 +704,7 @@ def examinformationUpdate(request, pk):
 
             if pre == True:
                 fs.save(pre_path+file.name, file)
-                img_link = request.build_absolute_uri("/media"+default_path+"pre/"+file.name)
+                img_link = request.build_absolute_uri("/media"+default_path+"preprocess/pre_"+file.name)
                 examinfo['imgansstd_path'] = img_link
                 data = process_ans(pre_path, "pre_"+file.name, exam.numberofexams, debug=False)
                 error_data = ''
@@ -785,7 +799,10 @@ def examinformationDelete(request, pk):
 def examinformationUploadPaper(request):
     tic = time.time()
     res = []
-    user = User.objects.get(userid=request.data['userid'])
+    try:
+        user = User.objects.get(userid=request.data['userid'])
+    except User.DoesNotExist:
+        return Response(user_notfound, status=status.HTTP_404_NOT_FOUND)
     exam = Exam.objects.get(examid=request.data['examid'])
     fs = FileSystemStorage()
     default_path = "/"+str(user.userid)+"/ans/"+str(exam.subid.subid)+"/"+str(request.data['examid'])+"/answersheet/"
@@ -896,9 +913,38 @@ def examinformationUploadPaper(request):
     exam.save()
     return Response(res_dict, status=status.HTTP_201_CREATED)
 
+@api_view(['GET'])
+def examinformationTableAns(request, pk):
+    try:
+        examinfo = Examinformation.objects.get(examinfoid=pk)
+    except Examinformation.DoesNotExist:
+        return Response(examinformation_notfound, status=status.HTTP_404_NOT_FOUND)
+    fs = FileSystemStorage()
+    examinfo_file_path = examinfo.imgansstd_path.split('/')[4:]
+    examinfo_file_path[-1] = "table_ans_"+examinfo_file_path[-1]
+    examinfo_file_path[-2] += "/table_ans_detect"
+    table_ans_path = "/"+"/".join(examinfo_file_path)
+    fs_table_ans_path = fs.path('')+table_ans_path
+    print(fs_table_ans_path)
+    if os.path.exists(fs_table_ans_path) == False:
+        examinfo_file_path = examinfo.imgansstd_path.split('/')[4:]
+        pre_path = fs.path('')+"/"+"/".join(examinfo_file_path[0:-1])+"/"
+        file_name = examinfo_file_path[-1]
+        exam = Exam.objects.get(examid=examinfo_file_path[3])
+        data = process_ans(pre_path, file_name, exam.numberofexams, debug=True)
+        if data[0][2] == None:
+            return Response({"msg": "วาดตารางสำเร็จ", "img_path": request.build_absolute_uri("/media"+table_ans_path)}, status=status.HTTP_200_OK)
+        else:
+            return Response({"err": "ไม่พบตารางคำตอบ"}, status=status.HTTP_404_NOT_FOUND)
+    else:
+        return Response({"msg": "วาดตารางสำเร็จ", "img_path": request.build_absolute_uri("/media"+table_ans_path)}, status=status.HTTP_200_OK)
+    
 @api_view(['POST'])
 def examinformationResult(request, pk):
-    user = User.objects.get(userid=request.data['userid'])
+    try:
+        user = User.objects.get(userid=request.data['userid'])
+    except User.DoesNotExist:
+        return Response(user_notfound, status=status.HTTP_404_NOT_FOUND)
     try:
         exam = Exam.objects.get(examid=pk)
     except Exam.DoesNotExist:
@@ -1186,7 +1232,10 @@ def quesheetDetailByUserid(request, pk):
 
 @api_view(['POST'])
 def quesheetCreate(request):
-    user = User.objects.get(userid=request.data['userid'])
+    try:
+        user = User.objects.get(userid=request.data['userid'])
+    except User.DoesNotExist:
+        return Response(user_notfound, status=status.HTTP_404_NOT_FOUND)
     quesheet_userid = Quesheet.objects.filter(userid=request.data['userid'], statusquesheet='1')
     if quesheet_userid.count() < user.typesid.limitque:
         data = request.data
@@ -1259,7 +1308,10 @@ def quesheetCreate(request):
 @api_view(['PUT'])
 def quesheetUpdate(request, pk):
     data = request.data
-    user = User.objects.get(userid=request.data['userid'])
+    try:
+        user = User.objects.get(userid=request.data['userid'])
+    except User.DoesNotExist:
+        return Response(user_notfound, status=status.HTTP_404_NOT_FOUND)
     if 'deletetimequesheet' in request.data:
         data = request.data
         quesheet = Quesheet.objects.get(quesheetid=pk, userid=user.userid)
@@ -1456,10 +1508,16 @@ def queinformationCreate(request):
 
 @api_view(['PUT'])
 def queinformationUpdate(request, pk):
-    user = User.objects.get(userid=request.data['userid'])
-    quesheet = Quesheet.objects.get(quesheetid=request.data['quesheetid'])
-    queheaddetails = Queheaddetails.objects.get(quesheetid=request.data['quesheetid'])
-    quetopicdetails = Quetopicdetails.objects.get(quesheetid=request.data['quesheetid'])
+    try:
+        user = User.objects.get(userid=request.data['userid'])
+    except User.DoesNotExist:
+        return Response(user_notfound, status=status.HTTP_404_NOT_FOUND)
+    try:
+        quesheet = Quesheet.objects.get(quesheetid=request.data['quesheetid'])
+        queheaddetails = Queheaddetails.objects.get(quesheetid=request.data['quesheetid'])
+        quetopicdetails = Quetopicdetails.objects.get(quesheetid=request.data['quesheetid'])
+    except Quesheet.DoesNotExist:
+        return Response(quesheet_notfound, status=status.HTTP_404_NOT_FOUND)
     queinformation = Queinformation.objects.get(queinfoid=pk)
     file = request.FILES['file'] if 'file' in request.FILES else None
     if file == None:
@@ -1589,10 +1647,16 @@ def queinformationDelete(request, pk):
 def queinformationUploadPaper(request):
     tic = time.time()
     res = []
-    user = User.objects.get(userid=request.data['userid'])
-    quesheet = Quesheet.objects.get(quesheetid=request.data['quesheetid'])
-    queheaddetails = Queheaddetails.objects.get(quesheetid=request.data['quesheetid'])
-    quetopicdetails = Quetopicdetails.objects.get(quesheetid=request.data['quesheetid'])
+    try:
+        user = User.objects.get(userid=request.data['userid'])
+    except User.DoesNotExist:
+        return Response(user_notfound, status=status.HTTP_404_NOT_FOUND)
+    try:
+        quesheet = Quesheet.objects.get(quesheetid=request.data['quesheetid'])
+        queheaddetails = Queheaddetails.objects.get(quesheetid=request.data['quesheetid'])
+        quetopicdetails = Quetopicdetails.objects.get(quesheetid=request.data['quesheetid'])
+    except Quesheet.DoesNotExist:
+        return Response(quesheet_notfound, status=status.HTTP_404_NOT_FOUND)
 
     quehead = [queheaddetails.quehead1, 
                queheaddetails.quehead2, 
@@ -1712,13 +1776,16 @@ def queinformationUploadPaper(request):
 
 @api_view(['POST'])
 def queinformationResult(request, pk):
-    user = User.objects.get(userid=request.data['userid'])
+    try:
+        user = User.objects.get(userid=request.data['userid'])
+    except User.DoesNotExist:
+        return Response(user_notfound, status=status.HTTP_404_NOT_FOUND)
     try:
         quesheet = Quesheet.objects.get(quesheetid=pk)
         queheaddetails = Queheaddetails.objects.get(quesheetid=pk)
         quetopicdetails = Quetopicdetails.objects.get(quesheetid=pk)
-    except Exam.DoesNotExist:
-        return Response(exam_notfound, status=status.HTTP_404_NOT_FOUND)
+    except Quesheet.DoesNotExist:
+        return Response(quesheet_notfound, status=status.HTTP_404_NOT_FOUND)
     queryset = Queinformation.objects.filter(quesheetid=pk)
     queinfo_serializer = QueinformationSerializer(queryset, many=True)
     fs = FileSystemStorage()
@@ -1838,7 +1905,10 @@ def requestDetailByUserid(request, pk):
 
 @api_view(['POST'])
 def requestCreate(request):
-    user = User.objects.get(userid=request.data['userid'])
+    try:
+        user = User.objects.get(userid=request.data['userid'])
+    except User.DoesNotExist:
+        return Response(user_notfound, status=status.HTTP_404_NOT_FOUND)
     request_indb = Request.objects.filter(userid=request.data['userid'])
     file = request.FILES['file']
     fs = FileSystemStorage()
@@ -1855,7 +1925,10 @@ def requestCreate(request):
 
 @api_view(['PUT'])
 def requestUpdate(request, pk):
-    user = User.objects.get(userid=request.data['userid'])
+    try:
+        user = User.objects.get(userid=request.data['userid'])
+    except User.DoesNotExist:
+        return Response(user_notfound, status=status.HTTP_404_NOT_FOUND)
     request_ = Request.objects.get(requestid=pk)
     data = request.data
     if 'file' in request.FILES:
@@ -2024,7 +2097,10 @@ def subjectDetailByUserid(request, pk):
 
 @api_view(['POST'])
 def subjectCreate(request):
-    user = User.objects.get(userid=request.data['userid'])
+    try:
+        user = User.objects.get(userid=request.data['userid'])
+    except User.DoesNotExist:
+        return Response(user_notfound, status=status.HTTP_404_NOT_FOUND)
     subject = Subject.objects.filter(userid=request.data['userid'], statussubject="1")
     if subject.count() < int(user.typesid.limitsubject):
         data = request.data

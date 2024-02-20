@@ -97,17 +97,17 @@ def chk_ans(ans, chno, chans, measure):
                             elif chk_correct_all < len(chans[i]):
                                 score -= round(int(ms[2])-(int(ms[2])/len(chans[i])*chk_correct_all), 2)
                             
-                    score = round(score, 2)
+                score = round(score, 2)
 
-                    if i != 0: analys += ","
-                    if chk_correct_all == len(chans[i]):
-                        right += 1
-                        analys += "1"
-                    else:
-                        wrong += 1
-                        analys += "0"
-                    chk_correct_all = 0
-                    notans_ = False
+                if i != 0: analys += ","
+                if chk_correct_all == len(chans[i]):
+                    right += 1
+                    analys += "1"
+                else:
+                    wrong += 1
+                    analys += "0"
+                chk_correct_all = 0
+                notans_ = False
         
         err = ""
         if countchk != chno:
