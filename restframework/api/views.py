@@ -13,6 +13,7 @@ import pandas as pd
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from tensorboard import summary
 
 from .models import *
 from .serializers import *
@@ -1768,6 +1769,8 @@ def queinformationUploadPaper(request):
         # else:
         #     print("queinformation_serializer.errors : ", queinformation_serializer.errors)
         res.append(queinformation_serializer.data)
+    quesheet.sequencesteps = '3'
+    quesheet.save()
     result = {"msg" : "อัพโหลดข้อมูลแบบสอบถามสำเร็จ", "result" : res}
     toc = time.time()
     print("Time : ", toc-tic)
@@ -1819,6 +1822,7 @@ def queinformationResult(request, pk):
         writer = csv.writer(csvfile)
         for row in part1_data:
             writer.writerow(row)
+    resultpart1_csv_path = request.build_absolute_uri("/media/"+str(user.userid)+"/qtn/"+str(quesheet.quesheetid)+"/result/result_part1.csv")
 
     csv_result_part2_path = csv_result_path+"result_part2.csv"
     part2_data = [["หัวข้อการประเมิน", 
@@ -1834,6 +1838,7 @@ def queinformationResult(request, pk):
                    "ส่วนเบี่ยงเบนมาตรฐาน",
                    "ระดับความพึงพอใจ"]]
     
+    data_for_summary = [[] for _ in range(10)]
     data_row_part2 = [[0] * 12 for _ in range(18)]
     quetopic = quetopicdetails.quetopicdetails.split(',')
     quetopic_format = quetopicdetails.quetopicformat.split(',')
@@ -1848,10 +1853,26 @@ def queinformationResult(request, pk):
                         data_row_part2[i][8] += int(ansquetopic[ii][i])
                     else:
                         data_row_part2[i][6] += 1
+
+                data_for_summary[0].append(data_row_part2[i][1]) # 5
+                data_for_summary[1].append(data_row_part2[i][2]) # 4
+                data_for_summary[2].append(data_row_part2[i][3]) # 3
+                data_for_summary[3].append(data_row_part2[i][4]) # 2
+                data_for_summary[4].append(data_row_part2[i][5]) # 1
+                data_for_summary[5].append(data_row_part2[i][6]) # 0
+
                 data_row_part2[i][7] = np.sum(data_row_part2[i][1:7]) # Sum
+                data_for_summary[6].append(data_row_part2[i][7]) # Sum
+
                 data_row_part2[i][8] = round(data_row_part2[i][8]/data_row_part2[i][7], 2) # Average
+                data_for_summary[7].append(data_row_part2[i][8]) # Average
+
                 data_row_part2[i][9] = data_row_part2[i][8]*100/5 # Average %
+                data_for_summary[8].append(data_row_part2[i][9]) # Average %
+
                 data_row_part2[i][10] = round(np.std(data_row_part2[i][1:7]), 2) # std
+                data_for_summary[9].append(data_row_part2[i][10]) # std
+
                 # Interpret Results
                 if data_row_part2[i][8] < 1.51: data_row_part2[i][11] = "น้อย" 
                 elif data_row_part2[i][8] < 2.51: data_row_part2[i][11] = "น้อยที่สุด"
@@ -1864,11 +1885,36 @@ def queinformationResult(request, pk):
             data_row_part2[i][1:] = ''
         part2_data.append(data_row_part2[i][::])
 
+    part2_data = [lst for lst in part2_data if lst]
+
+    summary = ['รวม',
+               np.sum(data_for_summary[0]),
+               np.sum(data_for_summary[1]),
+               np.sum(data_for_summary[2]),
+               np.sum(data_for_summary[3]),
+               np.sum(data_for_summary[4]),
+               np.sum(data_for_summary[5]),
+               np.sum(data_for_summary[6]),
+               round(np.average(data_for_summary[7]), 2),
+               round(np.average(data_for_summary[8]), 2),
+               round(np.average(data_for_summary[9]), 2)]
+    if summary[8] < 1.51: summary.append("น้อย")
+    elif summary[8] < 2.51: summary.append("น้อยที่สุด")
+    elif summary[8] < 3.51: summary.append("ปานกลาง")
+    elif summary[8] < 4.51: summary.append("มาก")
+    else: summary.append("มากที่สุด")
+    part2_data.append(summary)
+
     with open(csv_result_part2_path, 'w', newline='', encoding='utf-8-sig') as csvfile:
         writer = csv.writer(csvfile)
         for row in part2_data:
             writer.writerow(row)
-
+    resultpart2_csv_path = request.build_absolute_uri("/media/"+str(user.userid)+"/qtn/"+str(quesheet.quesheetid)+"/result/result_part2.csv")
+    
+    quesheet.resultpart1_csv_path = resultpart1_csv_path
+    quesheet.resultpart2_csv_path = resultpart2_csv_path
+    quesheet.sequencesteps = '5'
+    quesheet.save()
     return Response({"msg" : "วิเคราะห์ผลเสร็จสิ้น"}, status=status.HTTP_201_CREATED)
 
 ##########################################################################################
