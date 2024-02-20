@@ -27,6 +27,8 @@ def process_qtn(srcpath, dstpathp1, dstpathp3, file, p1, indpart1, indpart2):
     try:
         part1 = None
         part2 = None
+        other_list = []
+        part3 = None
         img = cv2.imread(srcpath+file)
         height, width, channels = img.shape
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -88,6 +90,7 @@ def process_qtn(srcpath, dstpathp1, dstpathp3, file, p1, indpart1, indpart2):
                 part1 = []
                 n=0
 
+                other_chk = False
                 for r in range(len(indpart1)):
                     for q in range(len(indpart1[r])):
                         mask = np.zeros(thresh.shape[:2], np.uint8)
@@ -101,11 +104,17 @@ def process_qtn(srcpath, dstpathp1, dstpathp3, file, p1, indpart1, indpart2):
                                 n+=1
                             part1[r].append(q+1)
                             count = count +1
-                            if any("p1"+str(r+1)+str(q+1) in s for s in p1):
-                                other = cropimg1[0+(l*r)-15 :l+(l*r) ,s+(b*q):s+(b*q)+b+20 ]
+                            if str("p1"+str(r+1)+str(q+1)) in p1:
+                                other_chk = True
+                                other = cropimg1[0+(l*r):l+(l*r), s+(b*q):s+(b*q)+b+20]
                                 path = dstpathp1+'หัวข้อที่ '+str(r+1)+"/"+'ตัวเลือกที่ '+str(q+1)+"/"
+                                other_list.append('หัวข้อที่ '+str(r+1)+"/"+'ตัวเลือกที่ '+str(q+1)+"/"+"p1"+str(r+1)+str(q+1)+"_"+file)
                                 os.makedirs(path, exist_ok=True)
                                 cv2.imwrite(path+"p1"+str(r+1)+str(q+1)+"_"+file, other)
+                    if other_chk:
+                        other_chk = False
+                    else:
+                        other_list.append("")
 
                     if count == 0 :
                         part1.append([])
@@ -170,6 +179,7 @@ def process_qtn(srcpath, dstpathp1, dstpathp3, file, p1, indpart1, indpart2):
         hist_mask = cv2.calcHist([thresh],[0],mask,[2],[0,256])
         if hist_mask[0] > 4500:
             cropimg3=img[a_sorted3[1][1]+10 :height-15 , 15 :width-100]
+            part3 = "p3_"+file
             cv2.imwrite(dstpathp3+"p3_"+file,cropimg3)
 
         chk_err = True
@@ -179,7 +189,7 @@ def process_qtn(srcpath, dstpathp1, dstpathp3, file, p1, indpart1, indpart2):
         if err2 == 0: err2 = None
         err=[chk_err, err1, err2]
 
-        return (err,part1,part2)
+        return (err,part1,part2,other_list,part3)
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         return "Error Line "+str(exc_tb.tb_lineno if exc_tb else None)+" : "+str(e)+" at file: "+file

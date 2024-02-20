@@ -130,6 +130,8 @@ class Quesheet(models.Model):
     detailslineone = models.TextField(db_column='DetailsLineOne', blank=True, null=True)  # Field name made lowercase.
     detailslinetwo = models.TextField(db_column='DetailsLineTwo', blank=True, null=True)  # Field name made lowercase.
     imgquesheet_path = models.TextField(db_column='ImgQueSheet_path', blank=True, null=True)  # Field name made lowercase.
+    resultpart1_csv_path = models.TextField(db_column='ResultPart1_csv_path', blank=True, null=True)  # Field name made lowercase.
+    resultpart2_csv_path = models.TextField(db_column='ResultPart2_csv_path', blank=True, null=True)  # Field name made lowercase.
     datetimestart = models.DateTimeField(db_column='DateTimeStart', blank=True, null=True)  # Field name made lowercase.
     datetimeend = models.DateTimeField(db_column='DateTimeEnd', blank=True, null=True)  # Field name made lowercase.
     sequencesteps = models.TextField(db_column='SequenceSteps', blank=True, null=True)  # Field name made lowercase.

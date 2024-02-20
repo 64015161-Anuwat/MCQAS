@@ -96,6 +96,7 @@ urlpatterns = [
     path('queinformation/update/<str:pk>/', views.queinformationUpdate, name='Queinformation-Update'),
     path('queinformation/delete/<str:pk>/', views.queinformationDelete, name='Queinformation-Delete'),
     path('queinformation/upload/paper/', views.queinformationUploadPaper, name='Queinformation-Upload-Paper'),
+    path('queinformation/result/<str:pk>/', views.queinformationResult, name='Queinformation-Result'),
     ############################################################
     path('request/', views.requestList, name='Request-List'),
     path('request/detail/<str:pk>/', views.requestDetail, name='Request-Detail'),

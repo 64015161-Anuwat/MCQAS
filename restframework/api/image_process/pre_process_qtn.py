@@ -73,66 +73,66 @@ def pre_process_qtn(srcpath, dstpath, filename):
         threshold, th = cv2.threshold(gray_dst, 150, 255, cv2.THRESH_BINARY)
         height_th, width_th, ch = dst.shape
 
-        mask1 = np.zeros(th.shape[:2], np.uint8)
-        mask1[0:35, 0:35]=255
-
-        mask2 = np.zeros(th.shape[:2], np.uint8)
-        mask2[height_th-35:height_th, 0:35]=255
-
-        mask3 = np.zeros(th.shape[:2], np.uint8)
-        mask3[0:35, width_th-35:width_th]=255
-
-        mask4 = np.zeros(th.shape[:2], np.uint8)
-        mask4[height_th-35:height_th, width_th-35:width_th]=255
-
-        # NEW QRcode Size
         # mask1 = np.zeros(th.shape[:2], np.uint8)
-        # mask1[0:85, 0:85]=255
+        # mask1[0:35, 0:35]=255
 
         # mask2 = np.zeros(th.shape[:2], np.uint8)
-        # mask2[height_th-85:height_th, 0:85]=255
+        # mask2[height_th-35:height_th, 0:35]=255
 
         # mask3 = np.zeros(th.shape[:2], np.uint8)
-        # mask3[0:85, width_th-85:width_th]=255
+        # mask3[0:35, width_th-35:width_th]=255
 
         # mask4 = np.zeros(th.shape[:2], np.uint8)
-        # mask4[height_th-85:height_th, width_th-85:width_th]=255
+        # mask4[height_th-35:height_th, width_th-35:width_th]=255
+
+        # NEW QRcode Size
+        mask1 = np.zeros(th.shape[:2], np.uint8)
+        mask1[0:85, 0:85]=255
+
+        mask2 = np.zeros(th.shape[:2], np.uint8)
+        mask2[height_th-85:height_th, 0:85]=255
+
+        mask3 = np.zeros(th.shape[:2], np.uint8)
+        mask3[0:85, width_th-85:width_th]=255
+
+        mask4 = np.zeros(th.shape[:2], np.uint8)
+        mask4[height_th-85:height_th, width_th-85:width_th]=255
         mask = [mask1,mask2,mask3,mask4]
         rt = None
         havecon = False
         rotation = 0
         for i in range(4):
             hist_mask = cv2.calcHist([th], [0], mask[i], [2], [0,256])
-            # if hist_mask[0] > 2800 and hist_mask[0] < 4800:
             # print(hist_mask[0])
-            if hist_mask[0] > 400 and hist_mask[0] < 950:
+            if hist_mask[0] > 2800 and hist_mask[0] < 4800:
+            # if hist_mask[0] > 400 and hist_mask[0] < 950:
                 rt = i
                 havecon = True
         # print("=====================================")
-        if havecon == True:
-            if rt == 0 :
-                rotation = -90
-            elif rt == 1 :
-                rotation = 180
-            elif rt == 2 :
-                rotation = 0
-            elif rt == 3 :
-                rotation = 90
-        else:
-            return error
-
-        # NEW QRcode Size
         # if havecon == True:
         #     if rt == 0 :
-        #         rotation = 90
-        #     elif rt == 1 :
         #         rotation = -90
-        #     elif rt == 2 :
+        #     elif rt == 1 :
         #         rotation = 180
-        #     elif rt == 3 :
+        #     elif rt == 2 :
         #         rotation = 0
+        #     elif rt == 3 :
+        #         rotation = 90
         # else:
         #     return error
+
+        # NEW QRcode Size
+        if havecon == True:
+            if rt == 0 :
+                rotation = 90
+            elif rt == 1 :
+                rotation = -90
+            elif rt == 2 :
+                rotation = 180
+            elif rt == 3 :
+                rotation = 0
+        else:
+            return error
                 
         scale = 1
         w = dst.shape[1]

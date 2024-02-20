@@ -193,7 +193,7 @@ user_notfound = {"err" : "ไม่พบข้อมูลผู้ใช้ง
 @api_view(['GET'])
 def userList(request):
     try:
-        queryset = User.objects.all().order_by('userid')
+        queryset = User.objects.all().order_by('-userid')
     except User.DoesNotExist:
         return Response(user_notfound, status=status.HTTP_404_NOT_FOUND)
     
@@ -247,9 +247,10 @@ def userUpdate(request, pk):
     except User.DoesNotExist:
         return Response(user_notfound, status=status.HTTP_404_NOT_FOUND)
     data = request.data
-    salt, hashed_password = hash_password(data['password'])
-    data['password'] = hashed_password
-    data['salt'] = salt
+    if 'password' in request.data:
+        salt, hashed_password = hash_password(data['password'])
+        data['password'] = hashed_password
+        data['salt'] = salt
     serializer = UserSerializer(instance=user, data=request.data)
     if serializer.is_valid():
         serializer.save()
@@ -328,7 +329,7 @@ exam_notfound = {"err" : "ไม่พบข้อมูลข้อสอบ"}
 @api_view(['GET'])
 def examList(request):
     try:
-        queryset = Exam.objects.all().order_by('examid')
+        queryset = Exam.objects.all().order_by('-examid')
     except Exam.DoesNotExist:
         return Response(exam_notfound, status=status.HTTP_404_NOT_FOUND)
     
@@ -347,7 +348,7 @@ def examDetail(request, pk):
 @api_view(['GET'])
 def examDetailBySubid(request, pk):
     try:
-        queryset = Exam.objects.filter(subid=pk, statusexam='1')
+        queryset = Exam.objects.filter(subid=pk, statusexam='1').order_by("-examid")
     except Exam.DoesNotExist:
         return Response(exam_notfound, status=status.HTTP_404_NOT_FOUND)
     
@@ -429,7 +430,7 @@ def examUploadCSV(request):
 def examUploadLogo(request):
     file = request.FILES['file']
     user = User.objects.get(userid=request.data['userid'])
-    if file.name.lower().endswith('.jpg') or file.name.lower().endswith('.jpeg'):
+    if file.name.lower().endswith('.jpg') or file.name.lower().endswith('.jpeg') or file.name.lower().endswith('.png'):
         exam = Exam.objects.get(examid=request.data['examid'])
         fs = FileSystemStorage()
         media = "/"+str(user.userid)+"/ans/"+str(exam.subid.subid)+"/"+str(exam.examid)+"/answersheet_format/"
@@ -459,7 +460,7 @@ examanswers_notfound = {"err" : "ไม่พบข้อมูลเฉลย�
 @api_view(['GET'])
 def examanswersList(request):
     try:
-        queryset = Examanswers.objects.all().order_by('examanswersid')
+        queryset = Examanswers.objects.all().order_by('-examanswersid')
     except Examanswers.DoesNotExist:
         return Response(examanswers_notfound, status=status.HTTP_404_NOT_FOUND)
     
@@ -522,7 +523,7 @@ def examanswersUploadPaper(request):
     file = request.FILES['file']
     user = User.objects.get(userid=request.data['userid'])
     exam = Exam.objects.get(examid=request.data['examid'])
-    if file.name.lower().endswith('.jpg') or file.name.lower().endswith('.jpeg'):
+    if file.name.lower().endswith('.jpg') or file.name.lower().endswith('.jpeg') or file.name.lower().endswith('.png'):
         answers_ = ''
         fs = FileSystemStorage()
         media = "/"+str(user.userid)+"/ans/temp/"
@@ -569,7 +570,7 @@ examinformation_notfound = {"err" : "ไม่พบข้อมูลข้อ�
 @api_view(['GET'])
 def examinformationList(request):
     try:
-        queryset = Examinformation.objects.all().order_by('examinfoid')
+        queryset = Examinformation.objects.all().order_by('-examinfoid')
     except Examinformation.DoesNotExist:
         return Response(examinformation_notfound, status=status.HTTP_404_NOT_FOUND)
     
@@ -676,7 +677,7 @@ def examinformationUpdate(request, pk):
             "imgansstd_path" : None,
             "errorstype" : None
         }
-        if file.name.lower().endswith('.jpg') or file.name.lower().endswith('.jpeg'):
+        if file.name.lower().endswith('.jpg') or file.name.lower().endswith('.jpeg') or file.name.lower().endswith('.png'):
             old_img = examinformation.imgansstd_path.split("/")[-1]
             if os.path.exists(ori_path+old_img):
                 os.remove(ori_path+old_img)
@@ -797,7 +798,7 @@ def examinformationUploadPaper(request):
         examinfo = {
             "examid" : request.data['examid']
         }
-        if file.name.lower().endswith('.jpg') or file.name.lower().endswith('.jpeg'):
+        if file.name.lower().endswith('.jpg') or file.name.lower().endswith('.jpeg') or file.name.lower().endswith('.png'):
             fs.save(ori_path+file.name, file)
             img_link = request.build_absolute_uri("/media"+default_path+"original/"+file.name)
             examinfo['imgansstd_path'] = img_link
@@ -1041,7 +1042,7 @@ chapter_notfound = {"err" : "ไม่พบข้อมูลบทเรีย
 @api_view(['GET'])
 def chapterList(request):
     try:
-        queryset = Chapter.objects.all().order_by('chapterid')
+        queryset = Chapter.objects.all().order_by('-chapterid')
     except Chapter.DoesNotExist:
         return Response(chapter_notfound, status=status.HTTP_404_NOT_FOUND)
     
@@ -1098,7 +1099,7 @@ chapteranswer_notfound = {"err" : "ไม่พบข้อมูลคำตอ
 @api_view(['GET'])
 def chapteranswerList(request):
     try:
-        queryset = Chapteranswer.objects.all().order_by('chapterandanswerid')
+        queryset = Chapteranswer.objects.all().order_by('-chapterandanswerid')
     except Chapteranswer.DoesNotExist:
         return Response(chapteranswer_notfound, status=status.HTTP_404_NOT_FOUND)
     
@@ -1156,7 +1157,7 @@ quesheet_notfound = {"err" : "ไม่พบข้อมูลแบบสอ�
 @api_view(['GET'])
 def quesheetList(request):
     try:
-        queryset = Quesheet.objects.all().order_by('quesheetid')
+        queryset = Quesheet.objects.all().order_by('-quesheetid')
     except Quesheet.DoesNotExist:
         return Response(quesheet_notfound, status=status.HTTP_404_NOT_FOUND)
     
@@ -1176,7 +1177,7 @@ def quesheetDetail(request, pk):
 @api_view(['GET'])
 def quesheetDetailByUserid(request, pk):
     try:
-        queryset = Quesheet.objects.filter(userid=pk, statusquesheet='1')
+        queryset = Quesheet.objects.filter(userid=pk, statusquesheet='1').order_by("-quesheetid")
     except Quesheet.DoesNotExist:
         return Response(quesheet_notfound, status=status.HTTP_404_NOT_FOUND)
     
@@ -1257,6 +1258,7 @@ def quesheetCreate(request):
 
 @api_view(['PUT'])
 def quesheetUpdate(request, pk):
+    data = request.data
     user = User.objects.get(userid=request.data['userid'])
     if 'deletetimequesheet' in request.data:
         data = request.data
@@ -1278,44 +1280,56 @@ def quesheetUpdate(request, pk):
                 queheaddetails_data['quehead3'].split(','), 
                 queheaddetails_data['quehead4'].split(','), 
                 queheaddetails_data['quehead5'].split(',')]
+        for c, i in enumerate(part_1):
+            for cc, ii in enumerate(i):
+                if ii == 'อื่นๆ': part_1[c][cc] += '__________'
         part_2 = chk_part_2_qtn(quetopicdetails_data['quetopicdetails'], quetopicdetails_data['quetopicformat'])
-        quesheet = Quesheet.objects.get(quesheetid=pk, userid=user.userid)
-        quesheet_serializer = QuesheetSerializer(instance=quesheet, data=quesheet_data)
-        if quesheet_serializer.is_valid():
-            quesheet_serializer.save()
-            queheaddetails = Queheaddetails.objects.get(quesheetid=pk)
-            queheaddetails_serializer = QueheaddetailsSerializer(instance=queheaddetails, data=queheaddetails_data)
-            if queheaddetails_serializer.is_valid():
-                queheaddetails_serializer.save()
-                quetopicdetails = Quetopicdetails.objects.get(quesheetid=pk)
-                quetopicdetails_serializer = QuetopicdetailsSerializer(instance=quetopicdetails, data=quetopicdetails_data)
-                if quetopicdetails_serializer.is_valid():
-                    quetopicdetails_serializer.save()
-                    fs = FileSystemStorage()
-                    media = "/"+str(user.userid)+"/qtn/"+str(quesheet_serializer.data['quesheetid'])+"/original_sheet/"
-                    media_path = fs.path('')+media
-                    logo_path = media_path+"logo.jpg"
-                    qrcode_path = media_path+"qrcode.jpg"
-                    if 'logo' in request.FILES:
+        if part_2[0] != False:
+            quesheet = Quesheet.objects.get(quesheetid=pk, userid=user.userid)
+            quesheet_serializer = QuesheetSerializer(instance=quesheet, data=quesheet_data)
+            if quesheet_serializer.is_valid():
+                quesheet_serializer.save()
+                queheaddetails = Queheaddetails.objects.get(quesheetid=pk)
+                queheaddetails_serializer = QueheaddetailsSerializer(instance=queheaddetails, data=queheaddetails_data)
+                if queheaddetails_serializer.is_valid():
+                    queheaddetails_serializer.save()
+                    quetopicdetails = Quetopicdetails.objects.get(quesheetid=pk)
+                    quetopicdetails_serializer = QuetopicdetailsSerializer(instance=quetopicdetails, data=quetopicdetails_data)
+                    if quetopicdetails_serializer.is_valid():
+                        quetopicdetails_serializer.save()
+                        fs = FileSystemStorage()
+                        media = "/"+str(user.userid)+"/qtn/"+str(quesheet_serializer.data['quesheetid'])+"/original_sheet/"
+                        media_path = fs.path('')+media
                         logo_path = media_path+"logo.jpg"
-                        fs.save(logo_path, request.FILES['logo'])
-                        chk = create_questionnaire_sheet(media_path, head_1, detail_1, detail_2, part_1, part_2, qrcode=qrcode_path ,logo=logo_path)
-                    elif not os.path.exists(logo_path):
-                        chk = create_questionnaire_sheet(media_path, head_1, detail_1, detail_2, part_1, part_2, qrcode=qrcode_path)
+                        qrcode_path = media_path+"qrcode.jpg"
+                        if 'logo' in request.FILES and (data['nonelogo'] == False or data['nonelogo'] == "false"):
+                            if os.path.exists(logo_path):
+                                os.remove(logo_path)
+                            fs.save(logo_path, request.FILES['logo'])
+                            chk = create_questionnaire_sheet(media_path, head_1, detail_1, detail_2, part_1, part_2, qrcode=qrcode_path ,logo=logo_path)
+                        elif os.path.exists(logo_path) and (data['nonelogo'] == False or data['nonelogo'] == "false"):
+                            chk = create_questionnaire_sheet(media_path, head_1, detail_1, detail_2, part_1, part_2, qrcode=qrcode_path ,logo=logo_path)
+                        else:
+                            if os.path.exists(logo_path):
+                                os.remove(logo_path)
+                            chk = create_questionnaire_sheet(media_path, head_1, detail_1, detail_2, part_1, part_2, qrcode=qrcode_path)
+                        if chk == True:
+                            link_sheet = request.build_absolute_uri("/media"+media+"questionnaire_sheet.jpg")
+                            val = {"imgquesheet_path": link_sheet}
+                            quesheet = Quesheet.objects.get(quesheetid=quesheet_serializer.data['quesheetid'])
+                            serializer = QuesheetSerializer(instance=quesheet, data=val)
+                            if serializer.is_valid():
+                                serializer.save()
+                            return Response({"msg" : "สร้างแบบสอบถามสำเร็จ", "imgquesheet_path" : link_sheet}, status=status.HTTP_201_CREATED)
+                        else:
+                            return Response({"err" : chk}, status=status.HTTP_400_BAD_REQUEST)
                     else:
-                        chk = create_questionnaire_sheet(media_path, head_1, detail_1, detail_2, part_1, part_2, qrcode=qrcode_path, logo=logo_path)
-                    if chk == True:
-                        link_sheet = request.build_absolute_uri("/media"+media+"questionnaire_sheet.jpg")
-                        val = {"imgquesheet_path": link_sheet}
-                        quesheet = Quesheet.objects.get(quesheetid=quesheet_serializer.data['quesheetid'])
-                        quesheet_serializer = QuesheetSerializer(instance=quesheet, data=val)
-                        if quesheet_serializer.is_valid():
-                            quesheet_serializer.save()
-                        return Response({"msg" : "สร้างแบบสอบถามสำเร็จ", "imgquesheet_path" : quesheet_serializer.data['imgquesheet_path']}, status=status.HTTP_201_CREATED)
-                    else:
-                        return Response({"err" : chk}, status=status.HTTP_400_BAD_REQUEST)
+                        quetopicdetails_serializer = QuetopicdetailsSerializer(instance=quetopicdetails_serializer.data, data=queheaddetails)
+                        if quetopicdetails_serializer.is_valid():
+                            quetopicdetails_serializer.save()
+                        return Response({"err" : quetopicdetails_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
                 else:
-                    queheaddetails_serializer = QueheaddetailsSerializer(instance=queheaddetails_serializer.data, data=queheaddetails)
+                    queheaddetails_serializer = QueheaddetailsSerializer(instance=queheaddetails_serializer.data, data=quetopicdetails)
                     if queheaddetails_serializer.is_valid():
                         queheaddetails_serializer.save()
                     return Response({"err" : queheaddetails_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
@@ -1323,8 +1337,9 @@ def quesheetUpdate(request, pk):
                 quesheet_serializer = QuesheetSerializer(instance=quesheet_serializer.data, data=quesheet)
                 if quesheet_serializer.is_valid():
                     quesheet_serializer.save()
-                return Response({"err" : quesheet_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(quesheet_serializer.data, status=status.HTTP_200_OK)
+            return Response({"err" : quesheet_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)   
+        else:
+            return Response({"err" : part_2[1], "err_": part_2[2]}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['DELETE'])
 def quesheetDelete(request, pk):
@@ -1343,7 +1358,7 @@ def quesheetDelete(request, pk):
 #- Queheaddetails
 @api_view(['GET'])
 def queheaddetailsList(request):
-    queryset = Queheaddetails.objects.all().order_by('queheaddetailsid')
+    queryset = Queheaddetails.objects.all().order_by('-queheaddetailsid')
     serializer = QueheaddetailsSerializer(queryset, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -1378,7 +1393,7 @@ def queheaddetailsDelete(request, pk):
 #- Quetopicdetails
 @api_view(['GET'])
 def quetopicdetailsList(request):
-    queryset = Quetopicdetails.objects.all().order_by('quetopicdetailsid')
+    queryset = Quetopicdetails.objects.all().order_by('-quetopicdetailsid')
     serializer = QuetopicdetailsSerializer(queryset, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -1415,7 +1430,7 @@ Queinformation_notfound = {"err" : "ไม่พบข้อมูลแบบ�
 @api_view(['GET'])
 def queinformationList(request):
     try:
-        queryset = Queinformation.objects.all().order_by('queinfoid')
+        queryset = Queinformation.objects.all().order_by('-queinfoid')
     except Queinformation.DoesNotExist:
         return Response(Queinformation_notfound, status=status.HTTP_404_NOT_FOUND)
     
@@ -1480,12 +1495,14 @@ def queinformationUpdate(request, pk):
             "quesheetid" : request.data['quesheetid'],
             "ansquehead" : None,
             "ansquetopic" : None,
+            "ansother": None,
+            "additionalsuggestions": None,
             "imgansstd_path" : None,
             "status_queinfo" : "Offline",
             "errorstype" : None
         }
 
-        if file.name.lower().endswith('.jpg') or file.name.lower().endswith('.jpeg'):
+        if file.name.lower().endswith('.jpg') or file.name.lower().endswith('.jpeg') or file.name.lower().endswith('.png'):
             fs.save(ori_path+file.name, file)
             pre = pre_process_qtn(ori_path, pre_path, file.name)
             if pre == True:
@@ -1510,18 +1527,25 @@ def queinformationUpdate(request, pk):
                             format_part_2.append([])
 
                 proc = process_qtn(pre_path, part_1_path, part_3_path,"pre_"+file.name, p1_answer_format, format_part_1, format_part_2)
-
                 if proc[0][0]:
                     valid = chk_validate_qtn(proc[1], proc[2])
                     queinformation_data['ansquehead'] = valid[1]
                     queinformation_data['ansquetopic'] = valid[2]
+
+                    for i in range(len(proc[3])):
+                        if proc[3][i] != "":
+                            proc[3][i] = request.build_absolute_uri("/media"+default_path+"result/part1/"+proc[3][i])
+                    queinformation_data['ansother'] = ",".join(proc[3])
+
+                    if proc[4] != None:
+                        queinformation_data['additionalsuggestions'] = request.build_absolute_uri("/media"+default_path+"result/part3/"+str(proc[4]))
 
                     if os.path.exists(pre_path+"pre_"+file.name) == True:
                         data = read_qrcode(pre_path+"pre_"+file.name)
                     else:
                         data = read_qrcode(ori_path+file.name)
                     if data != False:
-                        if data[0] != "CE KMITL-"+str(request.data['quesheetid']):
+                        if data != "CE KMITL-"+str(request.data['quesheetid']):
                             queinformation_data['errorstype'] = "QR Code ไม่ตรงกับแบบสอบถาม"
 
                     if valid[0] == False:
@@ -1596,11 +1620,13 @@ def queinformationUploadPaper(request):
             "quesheetid" : request.data['quesheetid'],
             "ansquehead" : None,
             "ansquetopic" : None,
+            "ansother": None,
+            "additionalsuggestions": None,
             "imgansstd_path" : None,
             "status_queinfo" : "Offline",
             "errorstype" : None
         }
-        if file.name.lower().endswith('.jpg') or file.name.lower().endswith('.jpeg'):
+        if file.name.lower().endswith('.jpg') or file.name.lower().endswith('.jpeg') or file.name.lower().endswith('.png'):
             fs.save(ori_path+file.name, file)
             pre = pre_process_qtn(ori_path, pre_path, file.name)
             if pre == True:
@@ -1632,6 +1658,14 @@ def queinformationUploadPaper(request):
                     # print("valid : ", valid)
                     queinformation_data['ansquehead'] = valid[1]
                     queinformation_data['ansquetopic'] = valid[2]
+
+                    for i in range(len(proc[3])):
+                        if proc[3][i] != "":
+                            proc[3][i] = request.build_absolute_uri("/media"+default_path+"result/part1/"+proc[3][i])
+                    queinformation_data['ansother'] = ",".join(proc[3])
+
+                    if proc[4] != None:
+                        queinformation_data['additionalsuggestions'] = request.build_absolute_uri("/media"+default_path+"result/part3/"+str(proc[4]))
 
                     if os.path.exists(pre_path+"pre_"+file.name) == True:
                         data = read_qrcode(pre_path+"pre_"+file.name)
@@ -1667,8 +1701,8 @@ def queinformationUploadPaper(request):
         queinformation_serializer = QueinformationSerializer(data=queinformation_data)
         if queinformation_serializer.is_valid():
             queinformation_serializer.save()
-        else:
-            print("queinformation_serializer.errors : ", queinformation_serializer.errors)
+        # else:
+        #     print("queinformation_serializer.errors : ", queinformation_serializer.errors)
         res.append(queinformation_serializer.data)
     result = {"msg" : "อัพโหลดข้อมูลแบบสอบถามสำเร็จ", "result" : res}
     toc = time.time()
@@ -1686,13 +1720,20 @@ def queinformationResult(request, pk):
     except Exam.DoesNotExist:
         return Response(exam_notfound, status=status.HTTP_404_NOT_FOUND)
     queryset = Queinformation.objects.filter(quesheetid=pk)
-    examinfo_serializer = QueinformationSerializer(queryset, many=True)
+    queinfo_serializer = QueinformationSerializer(queryset, many=True)
     fs = FileSystemStorage()
     csv_result_path = fs.path('')+"/"+str(user.userid)+"/qtn/"+str(quesheet.quesheetid)+"/result/"
     os.makedirs(csv_result_path, exist_ok=True)
-    csv_result_path += "result.csv"
+    csv_result_part1_path = csv_result_path+"result_part1.csv"
 
-    data = []
+    data_row_part1 = [[0] * 6 for _ in range(5)]
+    for index, i in enumerate(queinfo_serializer.data):
+        i['ansquehead'].split(",")
+        for iindex, ii in enumerate(i['ansquehead'].split(",")):
+            if ii != 'n':
+                data_row_part1[iindex][int(ii)-1] += 1
+                data_row_part1[iindex][-1] += 1
+            
     quehead_list = [queheaddetails.quehead1.split(','),
                     queheaddetails.quehead2.split(','),
                     queheaddetails.quehead3.split(','),
@@ -1702,10 +1743,64 @@ def queinformationResult(request, pk):
     for i in range(len(quehead_list)):
         for ii in range(len(quehead_list[i])):
             if ii == 0:
-                part1_data.append([quehead_list[i][ii], "จำนวน",  "%", ""])
+                part1_data.append([quehead_list[i][ii], "จำนวน",  "%"])
             else:
-                part1_data.append()
+                part1_data.append([quehead_list[i][ii], data_row_part1[i][ii-1], round(data_row_part1[i][ii-1]/data_row_part1[i][-1]*100, 2)])
+        part1_data.append(["รวม", data_row_part1[i][-1], round(data_row_part1[i][-1]/data_row_part1[i][-1]*100, 2)])
 
+    with open(csv_result_part1_path, 'w', newline='', encoding='utf-8-sig') as csvfile:
+        writer = csv.writer(csvfile)
+        for row in part1_data:
+            writer.writerow(row)
+
+    csv_result_part2_path = csv_result_path+"result_part2.csv"
+    part2_data = [["หัวข้อการประเมิน", 
+                   "มากที่สุด(5)",
+                   "มาก(4)",
+                   "ปานกลาง(3)",
+                   "น้อย(2)",
+                   "น้อยที่สุด(1)",
+                   "ไม่ประเมิน(0)",
+                   "จำนวนผู้ประเมิน",
+                   "ค่าเฉลี่ย",
+                   "ค่าเฉลี่ย(%)",
+                   "ส่วนเบี่ยงเบนมาตรฐาน",
+                   "ระดับความพึงพอใจ"]]
+    
+    data_row_part2 = [[0] * 12 for _ in range(18)]
+    quetopic = quetopicdetails.quetopicdetails.split(',')
+    quetopic_format = quetopicdetails.quetopicformat.split(',')
+    ansquetopic = [item['ansquetopic'].split(',') for item in queinfo_serializer.data]
+    for i in range(len(quetopic)):
+        data_row_part2[i][0] = quetopic[i]
+        if quetopic_format[i] == '0':
+            if quetopic[i] != '':
+                for ii in range(len(ansquetopic)):
+                    if ansquetopic[ii][i] != 'n':
+                        data_row_part2[i][6-int(ansquetopic[ii][i])] += 1
+                        data_row_part2[i][8] += int(ansquetopic[ii][i])
+                    else:
+                        data_row_part2[i][6] += 1
+                data_row_part2[i][7] = np.sum(data_row_part2[i][1:7]) # Sum
+                data_row_part2[i][8] = round(data_row_part2[i][8]/data_row_part2[i][7], 2) # Average
+                data_row_part2[i][9] = data_row_part2[i][8]*100/5 # Average %
+                data_row_part2[i][10] = round(np.std(data_row_part2[i][1:7]), 2) # std
+                # Interpret Results
+                if data_row_part2[i][8] < 1.51: data_row_part2[i][11] = "น้อย" 
+                elif data_row_part2[i][8] < 2.51: data_row_part2[i][11] = "น้อยที่สุด"
+                elif data_row_part2[i][8] < 3.51: data_row_part2[i][11] = "ปานกลาง"
+                elif data_row_part2[i][8] < 4.51: data_row_part2[i][11] = "มาก"
+                else: data_row_part2[i][11] = "มากที่สุด"
+            else:
+                data_row_part2[i][::] = ''
+        else:
+            data_row_part2[i][1:] = ''
+        part2_data.append(data_row_part2[i][::])
+
+    with open(csv_result_part2_path, 'w', newline='', encoding='utf-8-sig') as csvfile:
+        writer = csv.writer(csvfile)
+        for row in part2_data:
+            writer.writerow(row)
 
     return Response({"msg" : "วิเคราะห์ผลเสร็จสิ้น"}, status=status.HTTP_201_CREATED)
 
@@ -1715,7 +1810,7 @@ request_notfound = {"err" : "ไม่พบข้อมูลคำร้อง
 @api_view(['GET'])
 def requestList(request):
     try:
-        queryset = Request.objects.all().order_by('requestid')
+        queryset = Request.objects.all().order_by('-requestid')
     except Request.DoesNotExist:
         return Response(request_notfound, status=status.HTTP_404_NOT_FOUND)
     
@@ -1762,18 +1857,18 @@ def requestCreate(request):
 def requestUpdate(request, pk):
     user = User.objects.get(userid=request.data['userid'])
     request_ = Request.objects.get(requestid=pk)
-    file = request.FILES['file']
-    fs = FileSystemStorage()
-    media_path = fs.path('')+"/"+str(user.userid)+"/request/"
-    os.makedirs(media_path, exist_ok=True)
-    for filename in os.listdir(media_path):
-        if os.path.isfile(os.path.join(media_path, filename)):
-            os.remove(os.path.join(media_path, filename))
-    fs.save(media_path+"request.jpg", file)
     data = request.data
-    data['imgrequest_path'] = request.build_absolute_uri("/media/"+str(user.userid)+"/request/request.jpg")
-    data['status_request'] = "1"
-    serializer = RequestSerializer(instance=request_, data=request.data)
+    if 'file' in request.FILES:
+        file = request.FILES['file']
+        fs = FileSystemStorage()
+        media_path = fs.path('')+"/"+str(user.userid)+"/request/"
+        os.makedirs(media_path, exist_ok=True)
+        for filename in os.listdir(media_path):
+            if os.path.isfile(os.path.join(media_path, filename)):
+                os.remove(os.path.join(media_path, filename))
+        fs.save(media_path+"request.jpg", file)
+        data['imgrequest_path'] = request.build_absolute_uri("/media/"+str(user.userid)+"/request/request.jpg")
+    serializer = RequestSerializer(instance=request_, data=data)
     if serializer.is_valid():
         serializer.save()
     return Response(serializer.data, status=status.HTTP_200_OK)
@@ -1794,7 +1889,7 @@ type_notfound = {"err" : "ไม่พบข้อมูลประเภทผ
 @api_view(['GET'])
 def typeList(request):
     try:
-        queryset = Type.objects.all().order_by('typesid')
+        queryset = Type.objects.all().order_by('-typesid')
     except Type.DoesNotExist:
         return Response(type_notfound, status=status.HTTP_404_NOT_FOUND)
     
@@ -1842,7 +1937,7 @@ subchapter_notfound = {"err" : "ไม่พบข้อมูลบทย่อ
 @api_view(['GET'])
 def subchapterList(request):
     try:
-        queryset = Subchapter.objects.all().order_by('subchapterid')
+        queryset = Subchapter.objects.all().order_by('-subchapterid')
     except Subchapter.DoesNotExist:
         return Response(subchapter_notfound, status=status.HTTP_404_NOT_FOUND)
     
@@ -1900,7 +1995,7 @@ subject_notfound = {"err" : "ไม่พบข้อมูลวิชา"}
 @api_view(['GET'])
 def subjectList(request):
     try:
-        queryset = Subject.objects.all().order_by('subid')
+        queryset = Subject.objects.all().order_by('-subid')
     except Subject.DoesNotExist:
         return Response(subject_notfound, status=status.HTTP_404_NOT_FOUND)
     

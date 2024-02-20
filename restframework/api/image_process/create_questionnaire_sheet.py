@@ -43,7 +43,7 @@ def create_questionnaire_sheet(dstpath,head_1,detail1,detail2,part_1,part_2,qrco
         if logo != None:
             logo = cv2.imread(logo)
             logo = cv2.resize(logo,(300,135))
-            x_offset=181
+            x_offset=180
             y_offset=60
             img [y_offset:y_offset+logo.shape[0], x_offset:x_offset+logo.shape[1]]=logo
 
@@ -79,6 +79,8 @@ def create_questionnaire_sheet(dstpath,head_1,detail1,detail2,part_1,part_2,qrco
         
         limitleft = 500
         limitright = 1830
+        limitleft = 50
+        limitright = 2431
         head_1 = head1
         detail1 = detail1
         detail2 = detail2
@@ -170,9 +172,10 @@ def create_questionnaire_sheet(dstpath,head_1,detail1,detail2,part_1,part_2,qrco
         for i in part2:
             for index_j,j in enumerate(i):
                 if index_j!=0:
-                    for ch1 in range(6):
-                        cv2.circle(img,(1781+(100*ch1),1398+(98*(c1))),16,cirtext,1)
-                        cv2.putText(img,str(ch1),(2272-(100*ch1),1408+(98*(c1))),cv2.FONT_HERSHEY_SIMPLEX,0.9,cirtext,1)
+                    if j != '':
+                        for ch1 in range(6):
+                            cv2.circle(img,(1781+(100*ch1),1398+(98*(c1))),16,cirtext,1)
+                            cv2.putText(img,str(ch1),(2272-(100*ch1),1408+(98*(c1))),cv2.FONT_HERSHEY_SIMPLEX,0.9,cirtext,1)
                     c1+=1
                 else:
                     if j != "Nohead":
@@ -331,16 +334,20 @@ def create_questionnaire_sheet(dstpath,head_1,detail1,detail2,part_1,part_2,qrco
 
 # if __name__ == '__main__':
 #     r = re.compile("ี|ิ|ึ|ื|ั|่|้|๊|๋|็|์|ํ|ฺ|ฺ|ฺ|ํ|ฺ")
-#     string = "กี่จำไฟฟ้ามืดต์ฟํห๊"
-#     new_s = r.sub("",string)
-#     print(new_s)
-#     print(len(new_s))
+    
     
 #     dstpath = ""
-#     head_1 = "ความรู้ความเข้าใจก่อนการฝึกอบรม"
-#     detail1 = "ก่อนเข้ารับการอบรม ท่านมีความรู้ความเข้าใจก่อนการฝึกอบรม"
-#     detail2 = "หลังเข้ารับการอบรม ท่านมีความรู้ความเข้าใจหลังการฝึกอบรม"
-#     part_1 = [["เพศ", "ชาย", "หญิง"], ["ระดับชั้น", "ม.4", "ม.5", "ม.6", "อื่นๆ______"], ["สถานศึกษา", "โรงเรียน", "อบจ.", "อื่นๆ______"], ["สถานที่อบรม", "โรงเรียน", "อบจ.", "อื่นๆ______"], ["ประเภทการอบรม", "อบรม", "สัมมนา", "อื่นๆ______"]]
-#     part_2 = [["ความรู้เกี่ยวกับหัวข้อหลังการบรรยาย","การบรรยายชัดเจนเข้าใจง่าย","วิธีถ่ายทอดเนื้อหาน่าสนใจ","เอกสาร/สื่อ ประกอบการบรรยาย","การตอบคำถามตรงประเด็น","ความเหมาะสมของวิทยากรโดยรวม"],
-#               ["การรับข่าวประชาสัมพันธ์การจัดอมรม","การประสานงานการต้อนรับ","ระยะเวลาการอมรม","ความพร้อมอุปกรณ์/สื่ออิเล็กทรอนิกส์ต่างๆ","ความเหมาะสมของสถานที่"]]
-#     print(createinfsheet(dstpath,head_1,detail1,detail2,part_1,part_2,logo="assets/qrcode.jpg"))
+#     head_1 = "กกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกก" # manx 60
+#     detail1 = "" # max 95
+#     detail2 = "หลังเข้ารับการอบรม ท่านมีความรู้ความเข้าใจหลังการฝึกอบรม" # max 95
+#     part_1 = [["กกกกกกกกกกกกกกกกกกกก", "กกกกกกกกกกกก", "หญิง"],  # 20 15
+#               ["ระดับชั้น", "ม.4", "ม.5", "ม.6", "อื่นๆ______"], 
+#               ["สถานศึกษา", "โรงเรียน", "อบจ.", "อื่นๆ______"],
+#               ["สถานที่อบรม", "โรงเรียน", "อบจ.", "อื่นๆ______"], 
+#               ["ประเภทการอบรม", "อบรม", "สัมมนา", "อื่นๆ______"]]
+#     part_2 = [["กกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกก","กกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกกก","วิธีถ่ายทอดเนื้อหาน่าสนใจ","เอกสาร/สื่อ ประกอบการบรรยาย","การตอบคำถามตรงประเด็น","ความเหมาะสมของวิทยากรโดยรวม"],
+#               ["การรับข่าวประชาสัมพันธ์การจัดอมรม","การประสานงานการต้อนรับ","ระยะเวลาการอมรม","ความพร้อมอุปกรณ์/สื่ออิเล็กทรอนิกส์ต่างๆ","ความเหมาะสมของสถานที่"]] # 100
+#     new_s = r.sub("",part_2[0][1])
+#     print(new_s)
+#     print(len(new_s))
+#     print(create_questionnaire_sheet(dstpath,head_1,detail1,detail2,part_1,part_2,logo=os.getcwd()+"/api/image_process/assets/logo.jpg"))
