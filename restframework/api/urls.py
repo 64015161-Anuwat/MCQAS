@@ -93,6 +93,7 @@ urlpatterns = [
     ############################################################
     path('queinformation/', views.queinformationList, name='Queinformation-List'),
     path('queinformation/detail/<str:pk>/', views.queinformationDetail, name='Queinformation-Detail'),
+    path('queinformation/detail/quesheet/<str:pk>/', views.queinformationDetailByQuesheetid, name='Queinformation-Detail-By-Quesheet'),
     path('queinformation/create/', views.queinformationCreate, name='Queinformation-Create'),
     path('queinformation/update/<str:pk>/', views.queinformationUpdate, name='Queinformation-Update'),
     path('queinformation/delete/<str:pk>/', views.queinformationDelete, name='Queinformation-Delete'),

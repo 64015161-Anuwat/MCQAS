@@ -1500,6 +1500,16 @@ def queinformationDetail(request, pk):
     serializer = QueinformationSerializer(queryset, many=False)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
+@api_view(['GET'])
+def queinformationDetailByQuesheetid(request, pk):
+    try:
+        queryset = Queinformation.objects.filter(quesheetid=pk).order_by('-queinfoid')
+    except Queinformation.DoesNotExist:
+        return Response(Queinformation_notfound, status=status.HTTP_404_NOT_FOUND)
+    
+    serializer = QueinformationSerializer(queryset, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
 @api_view(['POST'])
 def queinformationCreate(request):
     serializer = QueinformationSerializer(data=request.data)
