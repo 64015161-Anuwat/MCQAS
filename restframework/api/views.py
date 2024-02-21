@@ -1028,51 +1028,57 @@ def examinformationResult(request, pk):
                 writer.writerow(row)
         result_csv_path = request.build_absolute_uri("/media/"+str(user.userid)+"/ans/"+str(exam.subid.subid)+"/"+str(exam.examid)+"/result/result_student_list.csv")
         
-        # Analysis Data
-        data = [["ข้อที่", "ค่าความยาก", "แปลผลค่าความยาก", "ค่าอำนาจจำแนก", "แปลผลค่าอำนาจจำแนก"]]
-        num_group = math.ceil(len(examinfo_serializer.data)/100*27)
-        analys = [item['itemanalysis'].split(',') for item in examinfo_serializer.data]
-        for i in range(int(exam.numberofexams)):
-            choice_data = []
-            difficulty = 0
-            discrimination = 0
-            high_group = 0
-            low_group = 0
-            choice_data.append(i+1)
-            for ii in range(len(analys)):
-                difficulty += int(analys[ii][i])
-                if ii < num_group: high_group += int(analys[ii][i])
-                elif ii >= len(analys)-num_group: low_group += int(analys[ii][i])
+        analysis_csv_path_list = []
+        for i in range(int(exam.numberofexamsets)):
+            queryset = Examinformation.objects.filter(examid=pk, setexaminfo=i+1).order_by('-score')
+            examinfo_serializer = ExaminformationSerializer(queryset, many=True)
+            # Analysis Data
+            data = [["ข้อที่", "ค่าความยาก", "แปลผลค่าความยาก", "ค่าอำนาจจำแนก", "แปลผลค่าอำนาจจำแนก"]]
+            num_group = math.ceil(len(examinfo_serializer.data)/100*27)
+            analys = [item['itemanalysis'].split(',') for item in examinfo_serializer.data]
+            for ii in range(int(exam.numberofexams)):
+                choice_data = []
+                difficulty = 0
+                discrimination = 0
+                high_group = 0
+                low_group = 0
+                choice_data.append(ii+1)
+                for iii in range(len(analys)):
+                    difficulty += int(analys[iii][ii])
+                    if iii < num_group: high_group += int(analys[iii][ii])
+                    elif iii >= len(analys)-num_group: low_group += int(analys[iii][ii])
 
-            difficulty = round(difficulty/len(examinfo_serializer.data), 2)
-            choice_data.append(difficulty)
-            if difficulty < 0.2: choice_data.append("ยากมาก ( ควรปรับปรุงหรือตัดทิ้ง )")
-            elif difficulty < 0.4: choice_data.append("ค่อนข้างยาก")
-            elif difficulty < 0.6: choice_data.append("ยากพอเหมาะ")
-            elif difficulty < 0.8: choice_data.append("ค่อนข้างง่าย")
-            else: choice_data.append("ง่ายมาก ( ควรปรับปรุงหรือตัดทิ้ง )")
+                difficulty = round(difficulty/len(examinfo_serializer.data), 2)
+                choice_data.append(difficulty)
+                if difficulty < 0.2: choice_data.append("ยากมาก ( ควรปรับปรุงหรือตัดทิ้ง )")
+                elif difficulty < 0.4: choice_data.append("ค่อนข้างยาก")
+                elif difficulty < 0.6: choice_data.append("ยากพอเหมาะ")
+                elif difficulty < 0.8: choice_data.append("ค่อนข้างง่าย")
+                else: choice_data.append("ง่ายมาก ( ควรปรับปรุงหรือตัดทิ้ง )")
 
-            discrimination = round((high_group-low_group)/(num_group*2), 2)
-            choice_data.append(discrimination)
-            if discrimination < 0: choice_data.append("จำแนกไม่ได้ ( ควรตัดทิ้ง)")
-            elif discrimination < 0.2: choice_data.append("จำแนกไม่ค่อยได้ (ควรปรับปรุง)")
-            elif discrimination < 0.4: choice_data.append("จำแนกได้บ้าง")
-            elif discrimination < 0.6: choice_data.append("จำแนกได้ปานกลาง")
-            elif discrimination < 0.8: choice_data.append("จำแนกดี")
-            elif discrimination < 1: choice_data.append("จำแนกดีมาก")
-            else: choice_data.append("จำแนกดีเลิศ")
+                discrimination = round((high_group-low_group)/(num_group*2), 2)
+                choice_data.append(discrimination)
+                if discrimination < 0: choice_data.append("จำแนกไม่ได้ ( ควรตัดทิ้ง)")
+                elif discrimination < 0.2: choice_data.append("จำแนกไม่ค่อยได้ (ควรปรับปรุง)")
+                elif discrimination < 0.4: choice_data.append("จำแนกได้บ้าง")
+                elif discrimination < 0.6: choice_data.append("จำแนกได้ปานกลาง")
+                elif discrimination < 0.8: choice_data.append("จำแนกดี")
+                elif discrimination < 1: choice_data.append("จำแนกดีมาก")
+                else: choice_data.append("จำแนกดีเลิศ")
 
-            data.append(choice_data)
+                data.append(choice_data)
 
-        fs = FileSystemStorage()
-        csv_itemanalysis_path = fs.path('')+"/"+str(user.userid)+"/ans/"+str(exam.subid.subid)+"/"+str(exam.examid)+"/result/item_analysis.csv"
-        # Write the data to the CSV file
-        with open(csv_itemanalysis_path, 'w', newline='', encoding='utf-8-sig') as csvfile:
-            writer = csv.writer(csvfile)
-            for row in data:
-                writer.writerow(row)
-        analysis_csv_path = request.build_absolute_uri("/media/"+str(user.userid)+"/ans/"+str(exam.subid.subid)+"/"+str(exam.examid)+"/result/item_analysis.csv")
+            fs = FileSystemStorage()
+            csv_itemanalysis_path = fs.path('')+"/"+str(user.userid)+"/ans/"+str(exam.subid.subid)+"/"+str(exam.examid)+"/result/item_analysis_ชุดที่_"+str(i+1)+".csv"
+            # Write the data to the CSV file
+            with open(csv_itemanalysis_path, 'w', newline='', encoding='utf-8-sig') as csvfile:
+                writer = csv.writer(csvfile)
+                for row in data:
+                    writer.writerow(row)
+            analysis_csv_path = request.build_absolute_uri("/media/"+str(user.userid)+"/ans/"+str(exam.subid.subid)+"/"+str(exam.examid)+"/result/item_analysis_ชุดที่_"+str(i+1)+".csv")
+            analysis_csv_path_list.append(analysis_csv_path)
         
+        analysis_csv_path = ",".join(analysis_csv_path_list)
         exam.result_csv_path = result_csv_path
         exam.analysis_csv_path = analysis_csv_path
         exam.sequencesteps = '6'
@@ -1479,13 +1485,13 @@ def quetopicdetailsDelete(request, pk):
 
 ##########################################################################################
 #- Queinformation
-Queinformation_notfound = {"err" : "ไม่พบข้อมูลแบบสอบถาม"}
+queinformation_notfound = {"err" : "ไม่พบข้อมูลแบบสอบถาม"}
 @api_view(['GET'])
 def queinformationList(request):
     try:
         queryset = Queinformation.objects.all().order_by('-queinfoid')
     except Queinformation.DoesNotExist:
-        return Response(Queinformation_notfound, status=status.HTTP_404_NOT_FOUND)
+        return Response(queinformation_notfound, status=status.HTTP_404_NOT_FOUND)
     
     serializer = QueinformationSerializer(queryset, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
@@ -1495,7 +1501,7 @@ def queinformationDetail(request, pk):
     try:
         queryset = Queinformation.objects.get(queinfoid=pk)
     except Queinformation.DoesNotExist:
-        return Response(Queinformation_notfound, status=status.HTTP_404_NOT_FOUND)
+        return Response(queinformation_notfound, status=status.HTTP_404_NOT_FOUND)
     
     serializer = QueinformationSerializer(queryset, many=False)
     return Response(serializer.data, status=status.HTTP_200_OK)
@@ -1505,7 +1511,7 @@ def queinformationDetailByQuesheetid(request, pk):
     try:
         queryset = Queinformation.objects.filter(quesheetid=pk).order_by('-queinfoid')
     except Queinformation.DoesNotExist:
-        return Response(Queinformation_notfound, status=status.HTTP_404_NOT_FOUND)
+        return Response(queinformation_notfound, status=status.HTTP_404_NOT_FOUND)
     
     serializer = QueinformationSerializer(queryset, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
@@ -1520,16 +1526,9 @@ def queinformationCreate(request):
 @api_view(['PUT'])
 def queinformationUpdate(request, pk):
     try:
-        user = User.objects.get(userid=request.data['userid'])
-    except User.DoesNotExist:
-        return Response(user_notfound, status=status.HTTP_404_NOT_FOUND)
-    try:
-        quesheet = Quesheet.objects.get(quesheetid=request.data['quesheetid'])
-        queheaddetails = Queheaddetails.objects.get(quesheetid=request.data['quesheetid'])
-        quetopicdetails = Quetopicdetails.objects.get(quesheetid=request.data['quesheetid'])
-    except Quesheet.DoesNotExist:
-        return Response(quesheet_notfound, status=status.HTTP_404_NOT_FOUND)
-    queinformation = Queinformation.objects.get(queinfoid=pk)
+        queinformation = Queinformation.objects.get(queinfoid=pk)
+    except Queinformation.DoesNotExist:
+        return Response(queinformation_notfound, status=status.HTTP_404_NOT_FOUND)
     file = request.FILES['file'] if 'file' in request.FILES else None
     if file == None:
         queinformation_update = json.loads(request.data['queinformation'])
@@ -1538,6 +1537,17 @@ def queinformationUpdate(request, pk):
             serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
     else:
+        try:
+            user = User.objects.get(userid=request.data['userid'])
+        except User.DoesNotExist:
+            return Response(user_notfound, status=status.HTTP_404_NOT_FOUND)
+        try:
+            quesheet = Quesheet.objects.get(quesheetid=request.data['quesheetid'])
+            queheaddetails = Queheaddetails.objects.get(quesheetid=request.data['quesheetid'])
+            quetopicdetails = Quetopicdetails.objects.get(quesheetid=request.data['quesheetid'])
+        except Quesheet.DoesNotExist:
+            return Response(quesheet_notfound, status=status.HTTP_404_NOT_FOUND)
+        
         quehead = [queheaddetails.quehead1, 
                    queheaddetails.quehead2, 
                    queheaddetails.quehead3, 
@@ -1613,9 +1623,10 @@ def queinformationUpdate(request, pk):
                         data = read_qrcode(pre_path+"pre_"+file.name)
                     else:
                         data = read_qrcode(ori_path+file.name)
-                    if data != False:
-                        if data != "CE KMITL-"+str(request.data['quesheetid']):
-                            queinformation_data['errorstype'] = "QR Code ไม่ตรงกับแบบสอบถาม"
+                    if data != "CE KMITL-"+str(request.data['quesheetid']):
+                        queinformation_data['errorstype'] = "QR Code ไม่ตรงกับแบบสอบถาม"
+                    else:
+                        queinformation_data['errorstype'] = "ไม่พบข้อมูล QR Code ในภาพ"
 
                     if valid[0] == False:
                         if queinformation_data['errorstype'] != None:
@@ -1649,7 +1660,7 @@ def queinformationDelete(request, pk):
     try:
         queinformation = Queinformation.objects.get(queinfoid=pk)
     except Queinformation.DoesNotExist:
-        return Response(Queinformation_notfound, status=status.HTTP_404_NOT_FOUND)
+        return Response(queinformation_notfound, status=status.HTTP_404_NOT_FOUND)
     
     queinformation.delete()
     return Response({"msg" : "ลบข้อมูลแบบสอบถามสำเร็จ"}, status=status.HTTP_200_OK)
