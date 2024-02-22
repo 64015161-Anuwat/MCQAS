@@ -32,7 +32,7 @@ def chk_validate_qtn(part_1, part_2):
                 if len(i) != 2:
                     part_1_check = False
         if part_1_check != None :
-            part_1_check = "มีคำตอบมากกว่า 1 คำตอบในบางคอลัมน์ที่หัวข้อ"
+            part_1_check = "มีคำตอบมากกว่า 1 คำตอบในบางคอลัมน์ที่ส่วนที่ 1"
 
         part_2_check = None
         part_2_ = ""
@@ -45,7 +45,7 @@ def chk_validate_qtn(part_1, part_2):
                 if len(i) != 2:
                     part_2_check = False
         if part_2_check != None :
-            part_2_check = "มีคำตอบมากกว่า 1 คำตอบในบางคอลัมน์ที่ตัวเลือก"
+            part_2_check = "มีคำตอบมากกว่า 1 คำตอบในบางคอลัมน์ที่ส่วนที่ 2"
         
         check_qtn = True
         if part_1_check != None or part_2_check != None:

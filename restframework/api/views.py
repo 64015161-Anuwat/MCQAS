@@ -1622,9 +1622,10 @@ def queinformationUpdate(request, pk):
                         data = read_qrcode(pre_path+"pre_"+file.name)
                     else:
                         data = read_qrcode(ori_path+file.name)
+                        
                     if data != "CE KMITL-"+str(request.data['quesheetid']):
                         queinformation_data['errorstype'] = "QR Code ไม่ตรงกับแบบสอบถาม"
-                    else:
+                    elif data == False:
                         queinformation_data['errorstype'] = "ไม่พบข้อมูล QR Code ในภาพ"
 
                     if valid[0] == False:
@@ -1756,9 +1757,10 @@ def queinformationUploadPaper(request):
                         data = read_qrcode(pre_path+"pre_"+file.name)
                     else:
                         data = read_qrcode(ori_path+file.name)
+
                     if data != "CE KMITL-"+str(request.data['quesheetid']):
                         queinformation_data['errorstype'] = "QR Code ไม่ตรงกับแบบสอบถาม"
-                    else:
+                    elif data == False:
                         queinformation_data['errorstype'] = "ไม่พบข้อมูล QR Code ในภาพ"
 
                     if valid[0][0] == False:
