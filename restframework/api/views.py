@@ -1622,22 +1622,28 @@ def queinformationUpdate(request, pk):
                         data = read_qrcode(pre_path+"pre_"+file.name)
                     else:
                         data = read_qrcode(ori_path+file.name)
-                        
+
                     if data != "CE KMITL-"+str(request.data['quesheetid']):
                         queinformation_data['errorstype'] = "QR Code ไม่ตรงกับแบบสอบถาม"
                     elif data == False:
                         queinformation_data['errorstype'] = "ไม่พบข้อมูล QR Code ในภาพ"
 
-                    if valid[0] == False:
+                    if valid[0][0] == False:
                         if queinformation_data['errorstype'] != None:
                             queinformation_data['errorstype'] += ","
-
-                        if valid[0][1] != None and valid[0][2] != None:
-                            queinformation_data['errorstype'] = str(valid[0][1])+","+str(valid[0][2])
-                        elif valid[0][1] != None and valid[0][2] == None:
-                            queinformation_data['errorstype'] = valid[0][1]
-                        elif valid[0][1] == None and valid[0][2] != None:
-                            queinformation_data['errorstype'] = valid[0][2]
+                            if valid[0][1] != None and valid[0][2] != None:
+                                queinformation_data['errorstype'] += str(valid[0][1])+","+str(valid[0][2])
+                            elif valid[0][1] != None and valid[0][2] == None:
+                                queinformation_data['errorstype'] += valid[0][1]
+                            elif valid[0][1] == None and valid[0][2] != None:
+                                queinformation_data['errorstype'] += valid[0][2]
+                        else:
+                            if valid[0][1] != None and valid[0][2] != None:
+                                queinformation_data['errorstype'] = str(valid[0][1])+","+str(valid[0][2])
+                            elif valid[0][1] != None and valid[0][2] == None:
+                                queinformation_data['errorstype'] = valid[0][1]
+                            elif valid[0][1] == None and valid[0][2] != None:
+                                queinformation_data['errorstype'] = valid[0][2]
                 else:
                     if proc[0][1] != None and proc[0][2] != None:
                         queinformation_data['errorstype'] = str(proc[0][1])+","+str(proc[0][2])
@@ -1766,13 +1772,19 @@ def queinformationUploadPaper(request):
                     if valid[0][0] == False:
                         if queinformation_data['errorstype'] != None:
                             queinformation_data['errorstype'] += ","
-
-                        if valid[0][1] != None and valid[0][2] != None:
-                            queinformation_data['errorstype'] = str(valid[0][1])+","+str(valid[0][2])
-                        elif valid[0][1] != None and valid[0][2] == None:
-                            queinformation_data['errorstype'] = valid[0][1]
-                        elif valid[0][1] == None and valid[0][2] != None:
-                            queinformation_data['errorstype'] = valid[0][2]
+                            if valid[0][1] != None and valid[0][2] != None:
+                                queinformation_data['errorstype'] += str(valid[0][1])+","+str(valid[0][2])
+                            elif valid[0][1] != None and valid[0][2] == None:
+                                queinformation_data['errorstype'] += valid[0][1]
+                            elif valid[0][1] == None and valid[0][2] != None:
+                                queinformation_data['errorstype'] += valid[0][2]
+                        else:
+                            if valid[0][1] != None and valid[0][2] != None:
+                                queinformation_data['errorstype'] = str(valid[0][1])+","+str(valid[0][2])
+                            elif valid[0][1] != None and valid[0][2] == None:
+                                queinformation_data['errorstype'] = valid[0][1]
+                            elif valid[0][1] == None and valid[0][2] != None:
+                                queinformation_data['errorstype'] = valid[0][2]
                 else:
                     if proc[0][1] != None and proc[0][2] != None:
                         queinformation_data['errorstype'] = str(proc[0][1])+","+str(proc[0][2])
@@ -1836,6 +1848,7 @@ def queinformationResult(request, pk):
                 i['ansquehead'].split(",")
                 for iindex, ii in enumerate(i['ansquehead'].split(",")):
                     if ii != 'n':
+                        print(ii)
                         data_row_part1[iindex][int(ii)-1] += 1
                         data_row_part1[iindex][-1] += 1
                     
