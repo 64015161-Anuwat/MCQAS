@@ -1530,7 +1530,7 @@ def queinformationUpdate(request, pk):
         return Response(queinformation_notfound, status=status.HTTP_404_NOT_FOUND)
     file = request.FILES['file'] if 'file' in request.FILES else None
     if file == None:
-        queinformation_update = json.loads(request.data['queinformation'])
+        queinformation_update = request.data
         serializer = QueinformationSerializer(instance=queinformation, data=queinformation_update)
         if serializer.is_valid():
             serializer.save()
@@ -1807,8 +1807,8 @@ def queinformationUploadPaper(request):
     quesheet.save()
     result = {"msg" : "อัพโหลดข้อมูลแบบสอบถามสำเร็จ", "result" : res}
     toc = time.time()
-    print("Time : ", toc-tic)
-    print("Result : ", len(result['result']))
+    # print("Time : ", toc-tic)
+    # print("Result : ", len(result['result']))
     return Response(result, status=status.HTTP_201_CREATED)
 
 @api_view(['POST'])
@@ -1848,7 +1848,6 @@ def queinformationResult(request, pk):
                 i['ansquehead'].split(",")
                 for iindex, ii in enumerate(i['ansquehead'].split(",")):
                     if ii != 'n':
-                        print(ii)
                         data_row_part1[iindex][int(ii)-1] += 1
                         data_row_part1[iindex][-1] += 1
                     
@@ -1860,11 +1859,16 @@ def queinformationResult(request, pk):
             part1_data = []
             for i in range(len(quehead_list)):
                 for ii in range(len(quehead_list[i])):
-                    if ii == 0:
+                    pass_ = False
+                    if ii == 0 and quehead_list[i][ii] != '':
                         part1_data.append([quehead_list[i][ii], "จำนวน",  "%"])
-                    else:
+                    elif ii != 0 and quehead_list[i][ii] != '':
                         part1_data.append([quehead_list[i][ii], data_row_part1[i][ii-1], round(data_row_part1[i][ii-1]/data_row_part1[i][-1]*100, 2)])
-                part1_data.append(["รวม", data_row_part1[i][-1], round(data_row_part1[i][-1]/data_row_part1[i][-1]*100, 2)])
+                    elif ii == 0 and quehead_list[i][ii] == '':
+                        pass_ = True
+                        break
+                if pass_ == False:
+                    part1_data.append(["รวม", data_row_part1[i][-1], round(data_row_part1[i][-1]/data_row_part1[i][-1]*100, 2)])
 
             with open(csv_result_part1_path, 'w', newline='', encoding='utf-8-sig') as csvfile:
                 writer = csv.writer(csvfile)
@@ -1873,7 +1877,7 @@ def queinformationResult(request, pk):
             resultpart1_csv_path = request.build_absolute_uri("/media/"+str(user.userid)+"/qtn/"+str(quesheet.quesheetid)+"result_part1_"+str(stat)+".csv")
             csv_result_part1_list.append(resultpart1_csv_path)
 
-            csv_result_part2_path = csv_result_path+"result_part2"+str(stat)+".csv"
+            csv_result_part2_path = csv_result_path+"result_part2_"+str(stat)+".csv"
             part2_data = [["หัวข้อการประเมิน", 
                         "มากที่สุด(5)",
                         "มาก(4)",
@@ -1958,7 +1962,7 @@ def queinformationResult(request, pk):
                 writer = csv.writer(csvfile)
                 for row in part2_data:
                     writer.writerow(row)
-            resultpart2_csv_path = request.build_absolute_uri("/media/"+str(user.userid)+"/qtn/"+str(quesheet.quesheetid)+"result_part2"+str(stat)+".csv")
+            resultpart2_csv_path = request.build_absolute_uri("/media/"+str(user.userid)+"/qtn/"+str(quesheet.quesheetid)+"result_part2_"+str(stat)+".csv")
             csv_result_part2_list.append(resultpart2_csv_path)
 
     quesheet.resultpart1_csv_path = ",".join(csv_result_part1_list)
