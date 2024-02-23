@@ -1874,7 +1874,7 @@ def queinformationResult(request, pk):
                 writer = csv.writer(csvfile)
                 for row in part1_data:
                     writer.writerow(row)
-            resultpart1_csv_path = request.build_absolute_uri("/media/"+str(user.userid)+"/qtn/"+str(quesheet.quesheetid)+"result_part1_"+str(stat)+".csv")
+            resultpart1_csv_path = request.build_absolute_uri("/media/"+str(user.userid)+"/qtn/"+str(quesheet.quesheetid)+"/result/result_part1_"+str(stat)+".csv")
             csv_result_part1_list.append(resultpart1_csv_path)
 
             csv_result_part2_path = csv_result_path+"result_part2_"+str(stat)+".csv"
@@ -1962,7 +1962,7 @@ def queinformationResult(request, pk):
                 writer = csv.writer(csvfile)
                 for row in part2_data:
                     writer.writerow(row)
-            resultpart2_csv_path = request.build_absolute_uri("/media/"+str(user.userid)+"/qtn/"+str(quesheet.quesheetid)+"result_part2_"+str(stat)+".csv")
+            resultpart2_csv_path = request.build_absolute_uri("/media/"+str(user.userid)+"/qtn/"+str(quesheet.quesheetid)+"/result/result_part2_"+str(stat)+".csv")
             csv_result_part2_list.append(resultpart2_csv_path)
 
     quesheet.resultpart1_csv_path = ",".join(csv_result_part1_list)
