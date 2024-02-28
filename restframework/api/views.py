@@ -77,6 +77,7 @@ def overview(request):
             'POST   - Create': '/examinformation/create/',
             'GET    - Detail': '/examinformation/detail/<str:pk>/',
             'GET    - DetailByExamid': '/examinformation/detail/exam/<str:pk>/',
+            'GET    - DetailByEmail': '/examinformation/detail/email/<str:pk>/',
             'PUT    - Update': '/examinformation/update/<str:pk>/',
             'DELETE - Delete': '/examinformation/delete/<str:pk>/',
             'POST   - UploadPaper': '/examinformation/upload/paper/',
@@ -626,6 +627,18 @@ def examinformationDetailByExamid(request, pk):
     # serializer = ExaminformationSerializer(queryset, many=True)
     # return Response(serializer.data, status=status.HTTP_200_OK)
 
+@api_view(['GET'])
+def examinformationDetailByEmail(request, pk):
+    try:
+        queryset = Examinformation.objects.filter(stdemail=pk, examid__showscores=1).order_by("-examinfoid")
+    except Examinformation.DoesNotExist:
+        return Response(examinformation_notfound, status=status.HTTP_404_NOT_FOUND)
+    
+    serializer = ExaminformationSerializer(queryset, many=True)
+
+    return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
 @api_view(['POST'])
 def examinformationCreate(request):
     serializer = ExaminformationSerializer(data=request.data)
@@ -649,6 +662,15 @@ def examinformationUpdate(request, pk):
         data_['subjectidstd'] = data['subjectidstd']
         data_['setexaminfo'] = data['setexaminfo']
         data_['examid'] = data['examid']
+
+        fs = FileSystemStorage()
+        csv_path = fs.path('')+"/"+str(user.userid)+"/ans/"+str(exam.subid.subid)+"/"+str(request.data['examid'])+"/student_list/student_list.csv"
+        df = pd.read_csv(csv_path)
+        df['รหัสนักศึกษา'] = df['รหัสนักศึกษา'].astype(str)
+        index = df[df['รหัสนักศึกษา'] == data['stdid']].index
+        data_["errorstype"] = "ไม่พบรหัสนักศึกษาในรายชื่อ" if index.empty else ''
+        data_['stdemail'] = df['อีเมล'][index[0]] if not index.empty else None
+
         if examinformation.setexaminfo != data_['setexaminfo']:
             try:
                 examanswers = Examanswers.objects.get(examid=data_['examid'], examnoanswers=data_['setexaminfo'])
