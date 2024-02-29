@@ -39,6 +39,7 @@ urlpatterns = [
     path('exam/delete/<str:pk>/', views.examDelete, name='Exam-Delete'),
     path('exam/upload/csv/', views.examUploadCSV, name='Exam-Upload-CSV'),
     path('exam/upload/logo/', views.examUploadLogo, name='Exam-Upload-Logo'),
+    path('exam/sendmail/<str:pk>/', views.examSendMail, name='Exam-Send-Mail'),
     ############################################################
     path('examanswers/', views.examanswersList, name='Examanswers-List'),
     path('examanswers/detail/<str:pk>/', views.examanswersDetail, name='Examanswers-Detail'),

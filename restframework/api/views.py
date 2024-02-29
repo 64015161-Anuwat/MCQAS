@@ -462,6 +462,46 @@ def examUploadLogo(request):
     else:
         return Response({"err" : "สกุลไฟล์ไม่ถูกต้อง กรุณาเลือกไฟล์ .jpg"}, status=status.HTTP_400_BAD_REQUEST)
 
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+@api_view(['GET'])
+def examSendMail(request, pk):
+    fs = FileSystemStorage()
+    try:
+        exam = Exam.objects.select_related("subid").get(examid=pk)
+    except Exam.DoesNotExist:
+        return Response(exam_notfound, status=status.HTTP_404_NOT_FOUND)
+    examindfo = Examinformation.objects.filter(examid=pk)
+    for info in examindfo:
+        examanswers = Examanswers.objects.get(examid=pk, examnoanswers=info.setexaminfo)
+        chk = chk_ans(info.anschoicestd, exam.numberofexams, examanswers.choiceanswers, examanswers.scoringcriteria)
+        data = {
+            'subject_name': exam.subid.subjectname,
+            'subject_id': exam.subid.subjectid,
+            'exam_name': exam.examname,
+            'exam_no': info.setexaminfo,
+            'student_id': info.stdid,
+            'score': info.score,
+            'maxscore': chk[3]
+        }
+        # Render the HTML template with the data
+        html_content = render_to_string(fs.path('templates/score.html'), {'data': data})
+
+        # Compose the email
+        subject = 'Exam Results'
+        from_email = settings.EMAIL_HOST_USER
+        to_email = [info.stdemail]
+
+        # Create the EmailMessage object
+        msg = EmailMultiAlternatives(subject, strip_tags(html_content), from_email, to_email)
+        msg.attach_alternative(html_content, "text/html")
+
+        # Send the email
+        msg.send()
+    exam.sendemail = 2
+    exam.save()
+    return Response({"ok": True}, status=status.HTTP_200_OK)
 
 ##########################################################################################
 #- Examanswers

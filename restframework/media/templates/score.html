@@ -1,0 +1,22 @@
+<div style="display:block;width:fit-content;height:fit-content;margin:0 auto;color:black;">
+    <div style="display:grid;grid-template-columns:auto;grid-Gap:10px;width:550px;">
+        <div style="display:inline;padding:0px;border:1px solid #DDDDDD;border-Radius:10px;">
+            <p style="text-Align:center;padding:10px;background:#C0DDFF;border-Radius:10px 10px 0px 0px;margin:0;"><b>ข้อมูลการสอบ</b></p>
+            <div style="padding:10px">
+                <p>วิชา : {{data.subject_name}}</p>
+                <p>รหัสวิชา : {{data.subject_id}}</p>
+                <p>ชื่อการสอบ : {{data.exam_name}}</p>
+                <p>การสอบครั้งที่ : {{data.exam_no}}</p>
+                <p>รหัสนักศึกษา : {{data.student_id}}</p>
+            </div>
+            
+        </div>
+        <div style="padding:0px;border:1px solid #DDDDDD;border-Radius: 10px;margin-top: 20px;">
+            <p style="text-Align:center;padding:10px;background:#C0DDFF;border-Radius:10px 10px 0px 0px;margin:0;"><b>คะแนนการสอบ</b></p>
+            <div style="padding:10px;display:grid;height:70%;align-Content:center;">
+                <p style="text-Align:center;"> คะแนนที่ได้ /  คะแนนเต็ม</p>
+                <h2 style="text-Align:center;">{{data.score}} / {{data.maxscore}}</h2>
+            </div>
+        </div>
+    </div>
+</div>
