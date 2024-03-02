@@ -62,6 +62,7 @@ def overview(request):
             'DELETE - Delete': '/exam/delete/<str:pk>/',
             'POST   - UploadCSV': '/exam/upload/csv/',
             'POST   - UploadLogo': '/exam/upload/logo/',
+            'GET    - SendScore' : '/exam/sendmail/<str:pk>'
         },
         'examanswers': {
             'GET    - List': '/examanswers/',
