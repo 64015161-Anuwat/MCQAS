@@ -1096,7 +1096,8 @@ def examinformationResult(request, pk):
             examinfo_serializer = ExaminformationSerializer(queryset, many=True)
             # Analysis Data
             data = [["ข้อที่", "ค่าความยาก", "แปลผลค่าความยาก", "ค่าอำนาจจำแนก", "แปลผลค่าอำนาจจำแนก"]]
-            num_group = math.ceil(len(examinfo_serializer.data)/100*27)
+            if len(examinfo_serializer.data) > 30: num_group = math.ceil(len(examinfo_serializer.data)/100*27)
+            else: num_group = math.ceil(len(examinfo_serializer.data)/2)
             analys = [item['itemanalysis'].split(',') for item in examinfo_serializer.data]
             for ii in range(int(exam.numberofexams)):
                 choice_data = []
@@ -1112,16 +1113,16 @@ def examinformationResult(request, pk):
 
                 difficulty = round(difficulty/len(examinfo_serializer.data), 2)
                 choice_data.append(difficulty)
-                if difficulty < 0.2: choice_data.append("ยากมาก ( ควรปรับปรุงหรือตัดทิ้ง )")
+                if difficulty < 0.2: choice_data.append("ยากมาก")
                 elif difficulty < 0.4: choice_data.append("ค่อนข้างยาก")
                 elif difficulty < 0.6: choice_data.append("ยากพอเหมาะ")
                 elif difficulty < 0.8: choice_data.append("ค่อนข้างง่าย")
-                else: choice_data.append("ง่ายมาก ( ควรปรับปรุงหรือตัดทิ้ง )")
+                else: choice_data.append("ง่ายมาก")
 
                 discrimination = round((high_group-low_group)/(num_group*2), 2)
                 choice_data.append(discrimination)
-                if discrimination < 0: choice_data.append("จำแนกไม่ได้ ( ควรตัดทิ้ง)")
-                elif discrimination < 0.2: choice_data.append("จำแนกไม่ค่อยได้ (ควรปรับปรุง)")
+                if discrimination < 0: choice_data.append("จำแนกไม่ได้")
+                elif discrimination < 0.2: choice_data.append("จำแนกไม่ค่อยได้")
                 elif discrimination < 0.4: choice_data.append("จำแนกได้บ้าง")
                 elif discrimination < 0.6: choice_data.append("จำแนกได้ปานกลาง")
                 elif discrimination < 0.8: choice_data.append("จำแนกดี")
