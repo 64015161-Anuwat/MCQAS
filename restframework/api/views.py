@@ -583,13 +583,13 @@ def examanswersUploadPaper(request):
         media_path = fs.path('')+media
         original_path = media_path+"original/"
         os.makedirs(original_path, exist_ok=True)
-        fs.save(original_path+file.name, file)
+        save_file_path = fs.save(original_path+file.name, file)
 
         preprocess_path = media_path+"preprocess/"
         os.makedirs(preprocess_path, exist_ok=True)
-        pre = pre_process_ans(original_path, preprocess_path, file.name)
+        pre = pre_process_ans(original_path, preprocess_path, save_file_path.split("/")[-1])
         if pre == True:
-            data = process_ans(preprocess_path, "pre_"+file.name, exam.numberofexams, debug=False)
+            data = process_ans(preprocess_path, "pre_"+save_file_path.split("/")[-1], exam.numberofexams, debug=False)
             err = ''
             for i in range(0, len(data[0])):
                 if data[0][i] != None:
@@ -729,11 +729,12 @@ def examinformationUpdate(request, pk):
             serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
     else:
+        print("File")
         fs = FileSystemStorage()
         default_path = "/"+str(user.userid)+"/ans/"+str(exam.subid.subid)+"/"+str(request.data['examid'])+"/answersheet/"
         ori_path = fs.path('')+default_path+"original/"
         pre_path = fs.path('')+default_path+"preprocess/"
-        pre_path_ = "/"+str(user.userid)+"/ans/"+str(exam.subid.subid)+"/"+str(request.data['examid'])+"/answersheet/"+"preprocess/"
+        pre_path_ = "/"+str(user.userid)+"/ans/"+str(exam.subid.subid)+"/"+str(request.data['examid'])+"/answersheet/preprocess/"
         os.makedirs(ori_path, exist_ok=True)
 
         examinfo = {
@@ -756,20 +757,22 @@ def examinformationUpdate(request, pk):
         }
         if file.name.lower().endswith('.jpg') or file.name.lower().endswith('.jpeg') or file.name.lower().endswith('.png'):
             old_img = examinformation.imgansstd_path.split("/")[-1]
+            old_img = old_img.replace("pre_", "", 1)
             if os.path.exists(ori_path+old_img):
                 os.remove(ori_path+old_img)
             if os.path.exists(pre_path+"pre_"+old_img):
                 os.remove(pre_path+"pre_"+old_img)
-            fs.save(ori_path+file.name, file)
-            img_link = request.build_absolute_uri("/media"+default_path+"original/"+file.name)
-            pre = pre_process_ans(ori_path, pre_path, file.name)
+            if os.path.exists(pre_path+"table_ans_detect/table_ans_pre_"+old_img):
+                os.remove(pre_path+"table_ans_detect/table_ans_pre_"+old_img)
+            save_file_path = fs.save(ori_path+file.name, file)
+            img_link = request.build_absolute_uri("/media/"+save_file_path)
+            pre = pre_process_ans(ori_path, pre_path, save_file_path.split("/")[-1])
             examinfo['imgansstd_path'] = img_link
 
             if pre == True:
-                fs.save(pre_path+file.name, file)
-                img_link = request.build_absolute_uri("/media"+default_path+"preprocess/pre_"+file.name)
+                img_link = request.build_absolute_uri("/media"+default_path+"preprocess/pre_"+save_file_path.split("/")[-1])
                 examinfo['imgansstd_path'] = img_link
-                data = process_ans(pre_path, "pre_"+file.name, exam.numberofexams, debug=False)
+                data = process_ans(pre_path, "pre_"+save_file_path.split("/")[-1], exam.numberofexams, debug=False)
                 error_data = ''
                 for i in range(0, len(data[0])):
                     if data[0][i] != None:
@@ -879,15 +882,15 @@ def examinformationUploadPaper(request):
             "examid" : request.data['examid']
         }
         if file.name.lower().endswith('.jpg') or file.name.lower().endswith('.jpeg') or file.name.lower().endswith('.png'):
-            fs.save(ori_path+file.name, file)
-            img_link = request.build_absolute_uri("/media"+default_path+"original/"+file.name)
+            save_file_path = fs.save(ori_path+file.name, file)
+            img_link = request.build_absolute_uri("/media/"+save_file_path)
             examinfo['imgansstd_path'] = img_link
-            pre = pre_process_ans(ori_path, pre_path, file.name)
+            pre = pre_process_ans(ori_path, pre_path, save_file_path.split("/")[-1])
 
             if pre == True:
-                img_link = request.build_absolute_uri("/media"+default_path+"preprocess/pre_"+file.name)
+                img_link = request.build_absolute_uri("/media"+default_path+"preprocess/pre_"+save_file_path.split("/")[-1])
                 examinfo['imgansstd_path'] = img_link
-                data = process_ans(pre_path, "pre_"+file.name, exam.numberofexams, debug=False)
+                data = process_ans(pre_path, "pre_"+save_file_path.split("/")[-1], exam.numberofexams, debug=False)
                 error_data = ''
                 for i in range(0, len(data[0])):
                     if data[0][i] != None:
@@ -1627,11 +1630,8 @@ def queinformationUpdate(request, pk):
         default_path = "/"+str(user.userid)+"/qtn/"+str(request.data['quesheetid'])+"/"
         ori_path = fs.path('')+default_path+"questionnaire/original/"
         pre_path = fs.path('')+default_path+"questionnaire/preprocess/"
-        os.makedirs(ori_path, exist_ok=True)
         part_1_path = fs.path('')+default_path+"result/part1/"
-        os.makedirs(part_1_path, exist_ok=True)
         part_3_path = fs.path('')+default_path+"result/part3/"
-        os.makedirs(part_3_path, exist_ok=True)
 
         queinformation_data = {
             "quesheetid" : request.data['quesheetid'],
@@ -1645,10 +1645,20 @@ def queinformationUpdate(request, pk):
         }
 
         if file.name.lower().endswith('.jpg') or file.name.lower().endswith('.jpeg') or file.name.lower().endswith('.png'):
-            fs.save(ori_path+file.name, file)
-            pre = pre_process_qtn(ori_path, pre_path, file.name)
+            old_img = queinformation.imgansstd_path.split("/")[-1]
+            old_img = old_img.replace("pre_", "", 1)
+            if os.path.exists(ori_path+old_img):
+                os.remove(ori_path+old_img)
+            if os.path.exists(pre_path+"pre_"+old_img):
+                os.remove(pre_path+"pre_"+old_img)
+            if os.path.exists(part_3_path+"p3_pre_"+old_img):
+                os.remove(part_3_path+"p3_pre_"+old_img)
+            save_file_path = fs.save(ori_path+file.name, file)
+            img_link = request.build_absolute_uri("/media/"+save_file_path)
+            queinformation_data['imgansstd_path'] = img_link
+            pre = pre_process_qtn(ori_path, pre_path, save_file_path.split("/")[-1])
             if pre == True:
-                img_link = request.build_absolute_uri("/media"+default_path+"questionnaire/original/"+file.name)
+                img_link = request.build_absolute_uri("/media"+default_path+"questionnaire/preprocess/pre_"+save_file_path.split("/")[-1])
                 queinformation_data['imgansstd_path'] = img_link
 
                 format_part_1 = []
@@ -1668,7 +1678,7 @@ def queinformationUpdate(request, pk):
                         for iindex, ii in enumerate(i):
                             format_part_2.append([])
 
-                proc = process_qtn(pre_path, part_1_path, part_3_path,"pre_"+file.name, p1_answer_format, format_part_1, format_part_2)
+                proc = process_qtn(pre_path, part_1_path, part_3_path,"pre_"+save_file_path.split("/")[-1], p1_answer_format, format_part_1, format_part_2)
                 if proc[0][0]:
                     valid = chk_validate_qtn(proc[1], proc[2])
                     queinformation_data['ansquehead'] = valid[1]
@@ -1682,15 +1692,15 @@ def queinformationUpdate(request, pk):
                     if proc[4] != None:
                         queinformation_data['additionalsuggestions'] = request.build_absolute_uri("/media"+default_path+"result/part3/"+str(proc[4]))
 
-                    if os.path.exists(pre_path+"pre_"+file.name) == True:
-                        data = read_qrcode(pre_path+"pre_"+file.name)
+                    if os.path.exists(pre_path+"pre_"+save_file_path.split("/")[-1]) == True:
+                        data = read_qrcode(pre_path+"pre_"+save_file_path.split("/")[-1])
                     else:
-                        data = read_qrcode(ori_path+file.name)
+                        data = read_qrcode(ori_path+save_file_path.split("/")[-1])
 
                     if data != "CE KMITL-"+str(request.data['quesheetid']):
                         queinformation_data['errorstype'] = "QR Code ไม่ตรงกับแบบสอบถาม"
                     elif data == False:
-                        queinformation_data['errorstype'] = "ไม่พบข้อมูล QR Code ในภาพ"
+                        queinformation_data['errorstype'] = "ไม่พบข้อมูล QR Code ในแบบสอบถาม"
 
                     if valid[0][0] == False:
                         if queinformation_data['errorstype'] != None:
@@ -1783,10 +1793,12 @@ def queinformationUploadPaper(request):
             "errorstype" : None
         }
         if file.name.lower().endswith('.jpg') or file.name.lower().endswith('.jpeg') or file.name.lower().endswith('.png'):
-            fs.save(ori_path+file.name, file)
-            pre = pre_process_qtn(ori_path, pre_path, file.name)
+            save_file_path = fs.save(ori_path+file.name, file)
+            img_link = request.build_absolute_uri("/media/"+save_file_path)
+            queinformation_data['imgansstd_path'] = img_link
+            pre = pre_process_qtn(ori_path, pre_path, save_file_path.split("/")[-1])
             if pre == True:
-                img_link = request.build_absolute_uri("/media"+default_path+"questionnaire/original/"+file.name)
+                img_link = request.build_absolute_uri("/media"+default_path+"questionnaire/preprocess/pre_"+save_file_path.split("/")[-1])
                 queinformation_data['imgansstd_path'] = img_link
 
                 format_part_1 = []
@@ -1806,7 +1818,7 @@ def queinformationUploadPaper(request):
                         for iindex, ii in enumerate(i):
                             format_part_2.append([])
 
-                proc = process_qtn(pre_path, part_1_path, part_3_path,"pre_"+file.name, p1_answer_format, format_part_1, format_part_2)
+                proc = process_qtn(pre_path, part_1_path, part_3_path,"pre_"+save_file_path.split("/")[-1], p1_answer_format, format_part_1, format_part_2)
 
                 if proc[0][0]:
                     # print("proc : ", proc)
@@ -1823,15 +1835,15 @@ def queinformationUploadPaper(request):
                     if proc[4] != None:
                         queinformation_data['additionalsuggestions'] = request.build_absolute_uri("/media"+default_path+"result/part3/"+str(proc[4]))
 
-                    if os.path.exists(pre_path+"pre_"+file.name) == True:
-                        data = read_qrcode(pre_path+"pre_"+file.name)
+                    if os.path.exists(pre_path+"pre_"+save_file_path.split("/")[-1]) == True:
+                        data = read_qrcode(pre_path+"pre_"+save_file_path.split("/")[-1])
                     else:
-                        data = read_qrcode(ori_path+file.name)
+                        data = read_qrcode(ori_path+save_file_path.split("/")[-1])
 
                     if data != "CE KMITL-"+str(request.data['quesheetid']):
                         queinformation_data['errorstype'] = "QR Code ไม่ตรงกับแบบสอบถาม"
                     elif data == False:
-                        queinformation_data['errorstype'] = "ไม่พบข้อมูล QR Code ในภาพ"
+                        queinformation_data['errorstype'] = "ไม่พบข้อมูล QR Code ในแบบสอบถาม"
 
                     if valid[0][0] == False:
                         if queinformation_data['errorstype'] != None:

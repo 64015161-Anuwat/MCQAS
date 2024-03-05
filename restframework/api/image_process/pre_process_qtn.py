@@ -17,7 +17,7 @@ def pre_process_qtn(srcpath, dstpath, filename):
         kernel = np.ones((5,5),np.uint8)
         img1 = cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)
         gray_img = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
-        gray_img = cv2.GaussianBlur(gray_img, (5, 5), 0)
+        # gray_img = cv2.GaussianBlur(gray_img, (5, 5), 0)
         ret, thresh = cv2.threshold(gray_img, 150, 255, cv2.THRESH_BINARY_INV)
         cv2.imwrite("1.jpg", img1)
         # blurred = cv2.GaussianBlur(gray_img, (5, 5), 0)
