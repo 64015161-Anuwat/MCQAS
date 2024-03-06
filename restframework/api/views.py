@@ -589,7 +589,8 @@ def examanswersUploadPaper(request):
         os.makedirs(preprocess_path, exist_ok=True)
         pre = pre_process_ans(original_path, preprocess_path, save_file_path.split("/")[-1])
         if pre == True:
-            data = process_ans(preprocess_path, "pre_"+save_file_path.split("/")[-1], exam.numberofexams, debug=False)
+            pre_img_name = "pre_"+save_file_path.split("/")[-1].split(".")[0]+".jpg"
+            data = process_ans(preprocess_path, pre_img_name, exam.numberofexams, debug=False)
             err = ''
             for i in range(0, len(data[0])):
                 if data[0][i] != None:
@@ -770,9 +771,10 @@ def examinformationUpdate(request, pk):
             examinfo['imgansstd_path'] = img_link
 
             if pre == True:
-                img_link = request.build_absolute_uri("/media"+default_path+"preprocess/pre_"+save_file_path.split("/")[-1])
+                pre_img_name = "pre_"+save_file_path.split("/")[-1].split(".")[0]+".jpg"
+                img_link = request.build_absolute_uri("/media"+default_path+"preprocess/"+pre_img_name)
                 examinfo['imgansstd_path'] = img_link
-                data = process_ans(pre_path, "pre_"+save_file_path.split("/")[-1], exam.numberofexams, debug=False)
+                data = process_ans(pre_path, pre_img_name, exam.numberofexams, debug=False)
                 error_data = ''
                 for i in range(0, len(data[0])):
                     if data[0][i] != None:
@@ -888,9 +890,11 @@ def examinformationUploadPaper(request):
             pre = pre_process_ans(ori_path, pre_path, save_file_path.split("/")[-1])
 
             if pre == True:
-                img_link = request.build_absolute_uri("/media"+default_path+"preprocess/pre_"+save_file_path.split("/")[-1])
+                pre_img_name = "pre_"+save_file_path.split("/")[-1].split(".")[0]+".jpg"
+                img_link = request.build_absolute_uri("/media"+default_path+"preprocess/"+pre_img_name)
                 examinfo['imgansstd_path'] = img_link
-                data = process_ans(pre_path, "pre_"+save_file_path.split("/")[-1], exam.numberofexams, debug=False)
+                data = process_ans(pre_path, pre_img_name, exam.numberofexams, debug=False)
+                print(data)
                 error_data = ''
                 for i in range(0, len(data[0])):
                     if data[0][i] != None:
@@ -1087,7 +1091,7 @@ def examinformationResult(request, pk):
             data_proc[7].append(np.sum(data_row[i]))
 
         # Write the updated data back to the CSV file
-        with open(csv_result_path, 'w', newline='', encoding='utf-8') as csvfile:
+        with open(csv_result_path, 'w', newline='', encoding='utf-8-sig') as csvfile:
             writer = csv.writer(csvfile)
             for row in inFile:
                 writer.writerow(row)
@@ -1114,25 +1118,26 @@ def examinformationResult(request, pk):
                     if iii < num_group: high_group += int(analys[iii][ii])
                     elif iii >= len(analys)-num_group: low_group += int(analys[iii][ii])
 
-                difficulty = round(difficulty/len(examinfo_serializer.data), 2)
-                choice_data.append(difficulty)
-                if difficulty < 0.2: choice_data.append("ยากมาก")
-                elif difficulty < 0.4: choice_data.append("ค่อนข้างยาก")
-                elif difficulty < 0.6: choice_data.append("ยากพอเหมาะ")
-                elif difficulty < 0.8: choice_data.append("ค่อนข้างง่าย")
-                else: choice_data.append("ง่ายมาก")
+                if len(examinfo_serializer.data) != 0:
+                    difficulty = round(difficulty/len(examinfo_serializer.data), 2)
+                    choice_data.append(difficulty)
+                    if difficulty < 0.2: choice_data.append("ยากมาก")
+                    elif difficulty < 0.4: choice_data.append("ค่อนข้างยาก")
+                    elif difficulty < 0.6: choice_data.append("ยากพอเหมาะ")
+                    elif difficulty < 0.8: choice_data.append("ค่อนข้างง่าย")
+                    else: choice_data.append("ง่ายมาก")
 
-                discrimination = round((high_group-low_group)/(num_group*2), 2)
-                choice_data.append(discrimination)
-                if discrimination < 0: choice_data.append("จำแนกไม่ได้")
-                elif discrimination < 0.2: choice_data.append("จำแนกไม่ค่อยได้")
-                elif discrimination < 0.4: choice_data.append("จำแนกได้บ้าง")
-                elif discrimination < 0.6: choice_data.append("จำแนกได้ปานกลาง")
-                elif discrimination < 0.8: choice_data.append("จำแนกดี")
-                elif discrimination < 1: choice_data.append("จำแนกดีมาก")
-                else: choice_data.append("จำแนกดีเลิศ")
+                    discrimination = round((high_group-low_group)/(num_group*2), 2)
+                    choice_data.append(discrimination)
+                    if discrimination < 0: choice_data.append("จำแนกไม่ได้")
+                    elif discrimination < 0.2: choice_data.append("จำแนกไม่ค่อยได้")
+                    elif discrimination < 0.4: choice_data.append("จำแนกได้บ้าง")
+                    elif discrimination < 0.6: choice_data.append("จำแนกได้ปานกลาง")
+                    elif discrimination < 0.8: choice_data.append("จำแนกดี")
+                    elif discrimination < 1: choice_data.append("จำแนกดีมาก")
+                    else: choice_data.append("จำแนกดีเลิศ")
 
-                data.append(choice_data)
+                    data.append(choice_data)
 
             fs = FileSystemStorage()
             csv_itemanalysis_path = fs.path('')+"/"+str(user.userid)+"/ans/"+str(exam.subid.subid)+"/"+str(exam.examid)+"/result/item_analysis_ชุดที่_"+str(i+1)+".csv"
@@ -1658,7 +1663,8 @@ def queinformationUpdate(request, pk):
             queinformation_data['imgansstd_path'] = img_link
             pre = pre_process_qtn(ori_path, pre_path, save_file_path.split("/")[-1])
             if pre == True:
-                img_link = request.build_absolute_uri("/media"+default_path+"questionnaire/preprocess/pre_"+save_file_path.split("/")[-1])
+                pre_img_name = "pre_"+save_file_path.split("/")[-1].split(".")[0]+".jpg"
+                img_link = request.build_absolute_uri("/media"+default_path+"questionnaire/preprocess/"+pre_img_name)
                 queinformation_data['imgansstd_path'] = img_link
 
                 format_part_1 = []
@@ -1678,7 +1684,7 @@ def queinformationUpdate(request, pk):
                         for iindex, ii in enumerate(i):
                             format_part_2.append([])
 
-                proc = process_qtn(pre_path, part_1_path, part_3_path,"pre_"+save_file_path.split("/")[-1], p1_answer_format, format_part_1, format_part_2)
+                proc = process_qtn(pre_path, part_1_path, part_3_path, pre_img_name, p1_answer_format, format_part_1, format_part_2)
                 if proc[0][0]:
                     valid = chk_validate_qtn(proc[1], proc[2])
                     queinformation_data['ansquehead'] = valid[1]
@@ -1692,12 +1698,12 @@ def queinformationUpdate(request, pk):
                     if proc[4] != None:
                         queinformation_data['additionalsuggestions'] = request.build_absolute_uri("/media"+default_path+"result/part3/"+str(proc[4]))
 
-                    if os.path.exists(pre_path+"pre_"+save_file_path.split("/")[-1]) == True:
-                        data = read_qrcode(pre_path+"pre_"+save_file_path.split("/")[-1])
+                    if os.path.exists(pre_path+pre_img_name) == True:
+                        data = read_qrcode(pre_path+pre_img_name)
                     else:
                         data = read_qrcode(ori_path+save_file_path.split("/")[-1])
 
-                    if data != "CE KMITL-"+str(request.data['quesheetid']):
+                    if data != "CE KMITL-"+str(request.data['quesheetid']) and data != False:
                         queinformation_data['errorstype'] = "QR Code ไม่ตรงกับแบบสอบถาม"
                     elif data == False:
                         queinformation_data['errorstype'] = "ไม่พบข้อมูล QR Code ในแบบสอบถาม"
@@ -1798,7 +1804,8 @@ def queinformationUploadPaper(request):
             queinformation_data['imgansstd_path'] = img_link
             pre = pre_process_qtn(ori_path, pre_path, save_file_path.split("/")[-1])
             if pre == True:
-                img_link = request.build_absolute_uri("/media"+default_path+"questionnaire/preprocess/pre_"+save_file_path.split("/")[-1])
+                pre_img_name = "pre_"+save_file_path.split("/")[-1].split(".")[0]+".jpg"
+                img_link = request.build_absolute_uri("/media"+default_path+"questionnaire/preprocess/"+pre_img_name)
                 queinformation_data['imgansstd_path'] = img_link
 
                 format_part_1 = []
@@ -1818,7 +1825,7 @@ def queinformationUploadPaper(request):
                         for iindex, ii in enumerate(i):
                             format_part_2.append([])
 
-                proc = process_qtn(pre_path, part_1_path, part_3_path,"pre_"+save_file_path.split("/")[-1], p1_answer_format, format_part_1, format_part_2)
+                proc = process_qtn(pre_path, part_1_path, part_3_path, pre_img_name, p1_answer_format, format_part_1, format_part_2)
 
                 if proc[0][0]:
                     # print("proc : ", proc)
@@ -1835,12 +1842,12 @@ def queinformationUploadPaper(request):
                     if proc[4] != None:
                         queinformation_data['additionalsuggestions'] = request.build_absolute_uri("/media"+default_path+"result/part3/"+str(proc[4]))
 
-                    if os.path.exists(pre_path+"pre_"+save_file_path.split("/")[-1]) == True:
-                        data = read_qrcode(pre_path+"pre_"+save_file_path.split("/")[-1])
+                    if os.path.exists(pre_path+pre_img_name) == True:
+                        data = read_qrcode(pre_path+pre_img_name)
                     else:
                         data = read_qrcode(ori_path+save_file_path.split("/")[-1])
 
-                    if data != "CE KMITL-"+str(request.data['quesheetid']):
+                    if data != "CE KMITL-"+str(request.data['quesheetid']) and data != False:
                         queinformation_data['errorstype'] = "QR Code ไม่ตรงกับแบบสอบถาม"
                     elif data == False:
                         queinformation_data['errorstype'] = "ไม่พบข้อมูล QR Code ในแบบสอบถาม"
