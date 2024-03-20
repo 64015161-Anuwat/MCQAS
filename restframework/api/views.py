@@ -6,8 +6,8 @@ import os
 import json
 import math
 
-from datetime import datetime, timedelta
 import time
+from datetime import datetime, timedelta
 
 import pandas as pd
 from rest_framework import status
@@ -184,7 +184,6 @@ def sendmail(subject, message, recipient_list):
               settings.EMAIL_HOST_USER, 
               recipient_list)
     return True
-
 ##########################################################################################
 #- Update
 @api_view(['PUT'])
@@ -284,12 +283,14 @@ def userDuplicateGoogleid(request, googleid):
         return Response(True)
     else:
         return Response({"err" : "บัญชี Google มีผู้ใช้งานแล้ว"}, status=status.HTTP_400_BAD_REQUEST)
-    
+
 @api_view(['POST'])
 def userLogin(request):
     email = request.data['email']
     password = request.data['password']
     queryset = User.objects.filter(email=email)
+    if email == '' or email == None or password == '' or password == None:
+        return Response({"err" : "กรุณากรอกอีเมล และรหัสผ่าน"}, status=status.HTTP_400_BAD_REQUEST)
     if queryset.count() > 0:
         if queryset[0].e_kyc == '1':
             salt = queryset[0].salt
@@ -475,31 +476,32 @@ def examSendMail(request, pk):
         return Response(exam_notfound, status=status.HTTP_404_NOT_FOUND)
     examindfo = Examinformation.objects.filter(examid=pk)
     for info in examindfo:
-        examanswers = Examanswers.objects.get(examid=pk, examnoanswers=info.setexaminfo)
-        chk = chk_ans(info.anschoicestd, exam.numberofexams, examanswers.choiceanswers, examanswers.scoringcriteria)
-        data = {
-            'subject_name': exam.subid.subjectname,
-            'subject_id': exam.subid.subjectid,
-            'exam_name': exam.examname,
-            'exam_no': info.setexaminfo,
-            'student_id': info.stdid,
-            'score': info.score,
-            'maxscore': chk[3]
-        }
-        # Render the HTML template with the data
-        html_content = render_to_string(fs.path('templates/score.html'), {'data': data})
+        if info.stdemail != None or info.stdemail != "":
+            examanswers = Examanswers.objects.get(examid=pk, examnoanswers=info.setexaminfo)
+            chk = chk_ans(info.anschoicestd, exam.numberofexams, examanswers.choiceanswers, examanswers.scoringcriteria)
+            data = {
+                'subject_name': exam.subid.subjectname,
+                'subject_id': exam.subid.subjectid,
+                'exam_name': exam.examname,
+                'exam_no': info.setexaminfo,
+                'student_id': info.stdid,
+                'score': info.score,
+                'maxscore': chk[3]
+            }
+            # Render the HTML template with the data
+            html_content = render_to_string(fs.path('templates/score.html'), {'data': data})
 
-        # Compose the email
-        subject = 'Exam Results'
-        from_email = settings.EMAIL_HOST_USER
-        to_email = [info.stdemail]
+            # Compose the email
+            subject = 'Exam Results'
+            from_email = settings.EMAIL_HOST_USER
+            to_email = [info.stdemail]
 
-        # Create the EmailMessage object
-        msg = EmailMultiAlternatives(subject, strip_tags(html_content), from_email, to_email)
-        msg.attach_alternative(html_content, "text/html")
+            # Create the EmailMessage object
+            msg = EmailMultiAlternatives(subject, strip_tags(html_content), from_email, to_email)
+            msg.attach_alternative(html_content, "text/html")
 
-        # Send the email
-        msg.send()
+            # Send the email
+            msg.send()
     exam.sendemail = 2
     exam.save()
     return Response({"ok": True}, status=status.HTTP_200_OK)

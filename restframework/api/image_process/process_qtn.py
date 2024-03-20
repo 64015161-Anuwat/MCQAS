@@ -69,7 +69,7 @@ def process_qtn(srcpath, dstpathp1, dstpathp3, file, p1, indpart1, indpart2):
         if cropimg1 is not None:
             height1, width1, channels = cropimg1.shape
             gray = cv2.cvtColor(cropimg1, cv2.COLOR_BGR2GRAY)
-            ret, thresh = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY)
+            ret, thresh = cv2.threshold(gray, 190, 255, cv2.THRESH_BINARY)
             linek = np.ones((5,5),np.uint8)
             thresh=cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, linek ,iterations=1)
             cv2.rectangle(thresh,(2,2),(width1-3,height1-3),(255,255,255),5)
@@ -129,7 +129,7 @@ def process_qtn(srcpath, dstpathp1, dstpathp3, file, p1, indpart1, indpart2):
         cropimg2 = img[540:1259,704:950]
         height2, width2, channels = cropimg2.shape
         gray = cv2.cvtColor(cropimg2, cv2.COLOR_BGR2GRAY)
-        ret, thresh = cv2.threshold(gray, 160, 255, cv2.THRESH_BINARY)
+        ret, thresh = cv2.threshold(gray, 190, 255, cv2.THRESH_BINARY)
         linek = np.ones((5,5),np.uint8)
         thresh=cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, linek ,iterations=1)
         cv2.rectangle(thresh,(2,2),(width2-3,height2-3),(255,255,255),5)

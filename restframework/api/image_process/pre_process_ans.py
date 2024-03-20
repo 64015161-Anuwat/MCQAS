@@ -6,7 +6,6 @@ import cProfile
 import glob
 import sys, os
 
-# @profile
 def pre_process_ans(srcpath, dstpath, filename):
     try:
         error = "ไม่พบกรอบ หรือ QRcode ของกระดาษคำตอบที่ไฟล์ : "+filename
@@ -18,21 +17,17 @@ def pre_process_ans(srcpath, dstpath, filename):
         img = cv2.imread(srcpath+filename)
         img = img[10:img.shape[0]-10, 10:img.shape[1]-10]
         height, width, ch = img.shape
+        # Blur image
         gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         gray_img = cv2.GaussianBlur(gray_img, (5, 5), 0)
         # thresholding image
         thresh, th = cv2.threshold(gray_img, 150, 255, cv2.THRESH_BINARY_INV)
         kernel = np.ones((5, 5), np.uint8)
-        # for i in range(0, 3):
-        #     for ii in range(0, 3):
-        #         print(i, ii)
-        th = cv2.morphologyEx(th, cv2.MORPH_OPEN, kernel, iterations=0)
         th = cv2.morphologyEx(th, cv2.MORPH_CLOSE, kernel, iterations=2)
-        # blurred = cv2.GaussianBlur(gray_img, (5, 5), 0)
-        # edged = cv2.Canny(blurred, 30, 100)
         
         contours, hierarchy = cv2.findContours(th, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
+        # Find Largest Rectangle
         largest = None
         max_area = 0
         for cont in contours:
@@ -40,15 +35,9 @@ def pre_process_ans(srcpath, dstpath, filename):
             if area > max_area:
                 epsilon = 0.01 * cv2.arcLength(cont, True)
                 approx = cv2.approxPolyDP(cont, epsilon, True)
-                # cv2.drawContours(img, [approx], -1, (0, 255, 0), 2)
-                # plt.imshow(img, cmap='gray')
-                # plt.show()
                 if len(approx) == 4:
                     largest = approx
                     max_area = area
-                    # cv2.drawContours(crop_img, [approx], -1, (0, 255, 0), 2)
-                    # cv2.imshow("", crop_img)
-                    # cv2.waitKey(1000)
         if largest is None:
             return error
         
@@ -56,12 +45,10 @@ def pre_process_ans(srcpath, dstpath, filename):
 
         # Initialize an array to hold the reordered points
         input_points = np.zeros((4, 2), dtype="float32")
-
         # Calculate the sum of x and y coordinates
         points_sum = points.sum(axis=1)
         input_points[0] = points[np.argmin(points_sum)]
         input_points[3] = points[np.argmax(points_sum)]
-
         # Calculate the difference of x and y coordinates
         points_diff = np.diff(points, axis=1)
         input_points[1] = points[np.argmin(points_diff)]
@@ -76,15 +63,8 @@ def pre_process_ans(srcpath, dstpath, filename):
 
         M = cv2.getPerspectiveTransform(input_points, pts2)
         dst = cv2.warpPerspective(img, M, output_size)
-            
-        # plt.subplot(234, xticks=[], yticks=[])
-        # plt.title("PerspectiveTransform")
-        # plt.imshow(dst, cmap="gray")
 
-        # Third Section ===================================================================
-
-        # Fourt Section ===================================================================
-
+        # Find QRcode
         gray_dst = cv2.cvtColor(dst, cv2.COLOR_BGR2GRAY)
         threshold, th = cv2.threshold(gray_dst, 150, 255, cv2.THRESH_BINARY)
         height_th, width_th, ch = dst.shape
@@ -107,10 +87,6 @@ def pre_process_ans(srcpath, dstpath, filename):
         havecon = False
         rotation = 0
         for i in range(4):
-            # masked_img = cv2.bitwise_and(th, th, mask=mask[i])
-            # cv2.imshow("", masked_img)
-            # cv2.waitKey(1000)
-            # cv2.destroyAllWindows()
             hist_mask = cv2.calcHist([th], [0], mask[i], [2], [0, 256])
             if hist_mask[0] > 400 and hist_mask[0] < 1000:
                 rt = i
@@ -126,7 +102,6 @@ def pre_process_ans(srcpath, dstpath, filename):
             elif rt == 3:
                 rotation = 0
         else:
-            # return "Error : QRcode not found or QRcode not in corner at file: "+filename
             return error
             
 
@@ -149,17 +124,8 @@ def pre_process_ans(srcpath, dstpath, filename):
 
         # Apply the rotation transformation to the image
         dst = cv2.warpAffine(dst, rot_mat, (int(math.ceil(nw)), int(math.ceil(nh))), flags=cv2.INTER_LANCZOS4)
-            
-        # Fourt Section ===================================================================
         
         cv2.imwrite(dstpath+"pre_"+filename.split(".")[0]+".jpg", dst)
-        # plt.subplot(235, xticks=[], yticks=[])
-        # plt.title("Rotate_2")
-        # plt.imshow(dst, cmap="gray")
-        # plt.subplot(236, xticks=[], yticks=[])
-        # plt.title("Result")
-        # plt.imshow(dst, cmap="gray")
-        # plt.show()
 
         return True
     except Exception as e:

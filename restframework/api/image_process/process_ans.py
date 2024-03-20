@@ -102,7 +102,7 @@ def process_ans(srcpath, filename, num_choice, debug=False):
         if table_std is not None:
             height1, width1, ch = table_std.shape
             gray = cv2.cvtColor(table_std, cv2.COLOR_BGR2GRAY)
-            ret, thresh = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY)
+            ret, thresh = cv2.threshold(gray, threshold_ans, 255, cv2.THRESH_BINARY)
             kernel = np.ones((5,5),np.uint8)
             thresh=cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel ,iterations=1)
             # cv2.imshow('BILL', thresh)
@@ -181,7 +181,7 @@ def process_ans(srcpath, filename, num_choice, debug=False):
         if table_sub is not None:
             height2, width2, ch = table_sub.shape
             gray = cv2.cvtColor(table_sub, cv2.COLOR_BGR2GRAY)
-            ret, thresh = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY)
+            ret, thresh = cv2.threshold(gray, threshold_ans, 255, cv2.THRESH_BINARY)
             kernel = np.ones((5,5),np.uint8)
             thresh=cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel ,iterations=1)
             # cv2.rectangle(thresh,(3,3),(width2-3,height2-3),(255, 255, 255),5)
