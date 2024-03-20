@@ -728,13 +728,10 @@ def examinformationDetailByExamid(request, pk):
         return Response(examinformation_notfound, status=status.HTTP_404_NOT_FOUND)
     
     duplicate_stdid = queryset.values('stdid').annotate(stdid_count=Count('stdid')).filter(stdid_count__gt=1)
-
     # Filter queryset to include only records with duplicate stdid
     queryset_duplicate = queryset.filter(stdid__in=[item['stdid'] for item in duplicate_stdid])
-
     # Serialize data for records with duplicate stdid
     serializer_duplicate = ExaminformationSerializer(queryset_duplicate, many=True)
-
     # Serialize data for records without duplicate stdid
     queryset_non_duplicate = queryset.exclude(stdid__in=[item['stdid'] for item in duplicate_stdid])
     serializer_non_duplicate = ExaminformationSerializer(queryset_non_duplicate, many=True)
@@ -744,9 +741,6 @@ def examinformationDetailByExamid(request, pk):
         'duplicate_records': serializer_duplicate.data,
         'non_duplicate_records': serializer_non_duplicate.data
     }, status=status.HTTP_200_OK)
-    
-    # serializer = ExaminformationSerializer(queryset, many=True)
-    # return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 def examinformationDetailByEmail(request, pk):
@@ -944,7 +938,7 @@ def examinformationDelete(request, pk):
 
 @api_view(['POST'])
 def examinformationUploadPaper(request):
-    tic = time.time()
+    # tic = time.time()
     res = []
     try:
         user = User.objects.get(userid=request.data['userid'])
@@ -1055,9 +1049,9 @@ def examinformationUploadPaper(request):
             print("examinfo_serializer.errors : ", examinfo_serializer.errors)
         res.append(examinfo_serializer.data)
     res_dict = {"result" : res}
-    toc = time.time()
-    print("Time: ", toc-tic)
-    print("res: ", len(res_dict['result']))
+    # toc = time.time()
+    # print("Time: ", toc-tic)
+    # print("res: ", len(res_dict['result']))
     exam.sequencesteps = '4'
     exam.save()
     return Response(res_dict, status=status.HTTP_201_CREATED)
@@ -1236,123 +1230,6 @@ def examinformationResult(request, pk):
         return Response({"msg" : "วิเคราะห์ผลเสร็จสิ้น"}, status=status.HTTP_200_OK)
     else:
         return Response({"err" : "ไม่พบไฟล์รายชื่อนักศึกษา"}, status=status.HTTP_404_NOT_FOUND)
-    
-
-
-##########################################################################################
-#- chapter
-chapter_notfound = {"err" : "ไม่พบข้อมูลบทเรียน"}
-@api_view(['GET'])
-def chapterList(request):
-    try:
-        queryset = Chapter.objects.all().order_by('-chapterid')
-    except Chapter.DoesNotExist:
-        return Response(chapter_notfound, status=status.HTTP_404_NOT_FOUND)
-    
-    serializer = ChapterSerializer(queryset, many=True)
-    return Response(serializer.data, status=status.HTTP_200_OK)
-
-@api_view(['GET'])
-def chapterDetail(request, pk):
-    try:
-        queryset = Chapter.objects.get(chapterid=pk)
-    except Chapter.DoesNotExist:
-        return Response(chapter_notfound, status=status.HTTP_404_NOT_FOUND)
-    
-    serializer = ChapterSerializer(queryset, many=False)
-    return Response(serializer.data, status=status.HTTP_200_OK)
-
-@api_view(['GET'])
-def chapterDetailByUserid(request, pk):
-    try:
-        queryset = Chapter.objects.filter(userid=pk)
-    except Chapter.DoesNotExist:
-        return Response(chapter_notfound, status=status.HTTP_404_NOT_FOUND)
-    
-    serializer = ChapterSerializer(queryset, many=True)
-    return Response(serializer.data, status=status.HTTP_200_OK)
-
-@api_view(['POST'])
-def chapterCreate(request):
-    serializer = ChapterSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-    return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-@api_view(['PUT'])
-def chapterUpdate(request, pk):
-    chapter = Chapter.objects.get(chapterid=pk)
-    serializer = ChapterSerializer(instance=chapter, data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-    return Response(serializer.data, status=status.HTTP_200_OK)
-
-@api_view(['DELETE'])
-def chapterDelete(request, pk):
-    try:
-        chapter = Chapter.objects.get(chapterid=pk)
-    except Chapter.DoesNotExist:
-        return Response(chapter_notfound, status=status.HTTP_404_NOT_FOUND)
-    chapter.delete()
-    return Response({"msg" : "ลบบทเรียนสำเร็จ"}, status=status.HTTP_200_OK)
-
-##########################################################################################
-#- chapteranswer
-chapteranswer_notfound = {"err" : "ไม่พบข้อมูลคำตอบของบทเรียน"}
-@api_view(['GET'])
-def chapteranswerList(request):
-    try:
-        queryset = Chapteranswer.objects.all().order_by('-chapterandanswerid')
-    except Chapteranswer.DoesNotExist:
-        return Response(chapteranswer_notfound, status=status.HTTP_404_NOT_FOUND)
-    
-    serializer = ChapteranswerSerializer(queryset, many=True)
-    return Response(serializer.data, status=status.HTTP_200_OK)
-
-@api_view(['GET'])
-def chapteranswerDetail(request, pk):
-    try:
-        queryset = Chapteranswer.objects.get(chapterandanswerid=pk)
-    except Chapteranswer.DoesNotExist:
-        return Response(chapteranswer_notfound, status=status.HTTP_404_NOT_FOUND)
-    
-    serializer = ChapteranswerSerializer(queryset, many=False)
-    return Response(serializer.data, status=status.HTTP_200_OK)
-
-@api_view(['GET'])
-def chapteranswerDetailByChapterid(request, pk):
-    try:
-        queryset = Chapteranswer.objects.filter(chapterid=pk)
-    except Chapteranswer.DoesNotExist:
-        return Response(chapteranswer_notfound, status=status.HTTP_404_NOT_FOUND)
-    
-    serializer = ChapteranswerSerializer(queryset, many=True)
-    return Response(serializer.data, status=status.HTTP_200_OK)
-
-@api_view(['POST'])
-def chapteranswerCreate(request):
-    serializer = ChapteranswerSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-    return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-@api_view(['PUT'])
-def chapteranswerUpdate(request, pk):
-    chapteranswer = Chapteranswer.objects.get(chapterandanswerid=pk)
-    serializer = ChapteranswerSerializer(instance=chapteranswer, data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-    return Response(serializer.data, status=status.HTTP_200_OK)
-
-@api_view(['DELETE'])
-def chapteranswerDelete(request, pk):
-    try:
-        chapteranswer = Chapteranswer.objects.get(chapterandanswerid=pk)
-    except Chapteranswer.DoesNotExist:
-        return Response(chapteranswer_notfound, status=status.HTTP_404_NOT_FOUND)
-    
-    chapteranswer.delete()
-    return Response({"msg" : "ลบบทเรียนสำเร็จ"}, status=status.HTTP_200_OK)
 
 ##########################################################################################
 #- Quesheet
@@ -2267,6 +2144,63 @@ def typeDelete(request, pk):
     return Response({"msg" : "ลบประเภทผู้ใช้งานสำเร็จ"}, status=status.HTTP_200_OK)
 
 ##########################################################################################
+#- chapter
+chapter_notfound = {"err" : "ไม่พบข้อมูลบทเรียน"}
+@api_view(['GET'])
+def chapterList(request):
+    try:
+        queryset = Chapter.objects.all().order_by('-chapterid')
+    except Chapter.DoesNotExist:
+        return Response(chapter_notfound, status=status.HTTP_404_NOT_FOUND)
+    
+    serializer = ChapterSerializer(queryset, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+def chapterDetail(request, pk):
+    try:
+        queryset = Chapter.objects.get(chapterid=pk)
+    except Chapter.DoesNotExist:
+        return Response(chapter_notfound, status=status.HTTP_404_NOT_FOUND)
+    
+    serializer = ChapterSerializer(queryset, many=False)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+def chapterDetailByUserid(request, pk):
+    try:
+        queryset = Chapter.objects.filter(userid=pk)
+    except Chapter.DoesNotExist:
+        return Response(chapter_notfound, status=status.HTTP_404_NOT_FOUND)
+    
+    serializer = ChapterSerializer(queryset, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+def chapterCreate(request):
+    serializer = ChapterSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+@api_view(['PUT'])
+def chapterUpdate(request, pk):
+    chapter = Chapter.objects.get(chapterid=pk)
+    serializer = ChapterSerializer(instance=chapter, data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+@api_view(['DELETE'])
+def chapterDelete(request, pk):
+    try:
+        chapter = Chapter.objects.get(chapterid=pk)
+    except Chapter.DoesNotExist:
+        return Response(chapter_notfound, status=status.HTTP_404_NOT_FOUND)
+    chapter.delete()
+    return Response({"msg" : "ลบบทเรียนสำเร็จ"}, status=status.HTTP_200_OK)
+
+##########################################################################################
 #- subchapter
 subchapter_notfound = {"err" : "ไม่พบข้อมูลบทย่อย"}
 @api_view(['GET'])
@@ -2323,5 +2257,63 @@ def subchapterDelete(request, pk):
     
     subchapter.delete()
     return Response({"msg" : "ลบบทย่อยสำเร็จ"}, status=status.HTTP_200_OK)
+
+##########################################################################################
+#- chapteranswer
+chapteranswer_notfound = {"err" : "ไม่พบข้อมูลคำตอบของบทเรียน"}
+@api_view(['GET'])
+def chapteranswerList(request):
+    try:
+        queryset = Chapteranswer.objects.all().order_by('-chapteranswerid')
+    except Chapteranswer.DoesNotExist:
+        return Response(chapteranswer_notfound, status=status.HTTP_404_NOT_FOUND)
+    
+    serializer = ChapteranswerSerializer(queryset, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+def chapteranswerDetail(request, pk):
+    try:
+        queryset = Chapteranswer.objects.get(chapteranswerid=pk)
+    except Chapteranswer.DoesNotExist:
+        return Response(chapteranswer_notfound, status=status.HTTP_404_NOT_FOUND)
+    
+    serializer = ChapteranswerSerializer(queryset, many=False)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+def chapteranswerDetailByChapterid(request, pk):
+    try:
+        queryset = Chapteranswer.objects.filter(chapterid=pk)
+    except Chapteranswer.DoesNotExist:
+        return Response(chapteranswer_notfound, status=status.HTTP_404_NOT_FOUND)
+    
+    serializer = ChapteranswerSerializer(queryset, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+def chapteranswerCreate(request):
+    serializer = ChapteranswerSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+@api_view(['PUT'])
+def chapteranswerUpdate(request, pk):
+    chapteranswer = Chapteranswer.objects.get(chapteranswerid=pk)
+    serializer = ChapteranswerSerializer(instance=chapteranswer, data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+@api_view(['DELETE'])
+def chapteranswerDelete(request, pk):
+    try:
+        chapteranswer = Chapteranswer.objects.get(chapteranswerid=pk)
+    except Chapteranswer.DoesNotExist:
+        return Response(chapteranswer_notfound, status=status.HTTP_404_NOT_FOUND)
+    
+    chapteranswer.delete()
+    return Response({"msg" : "ลบบทเรียนสำเร็จ"}, status=status.HTTP_200_OK)
 
 ##########################################################################################
