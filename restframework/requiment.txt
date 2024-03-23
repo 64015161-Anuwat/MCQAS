@@ -9,7 +9,7 @@ django-environ==0.11.2
 django-timezone-field==6.1.0
 djangorestframework==3.14.0
 imutils==0.5.4
-pandas==1.5.3
+pandas==2.2.1
 pythainlp==4.0.2
 python-crfsuite==0.9.10
 pyzbar==0.1.9
