@@ -553,7 +553,7 @@ def examSendMail(request, pk):
         return Response(exam_notfound, status=status.HTTP_404_NOT_FOUND)
     examindfo = Examinformation.objects.filter(examid=pk)
     for info in examindfo:
-        if info.stdemail != None or info.stdemail != "":
+        if info.stdemail != None or info.stdemail != "" or info.stdemail != "nan":
             examanswers = Examanswers.objects.get(examid=pk, examnoanswers=info.setexaminfo)
             chk = chk_ans(info.anschoicestd, exam.numberofexams, examanswers.choiceanswers, examanswers.scoringcriteria)
             data = {
@@ -573,12 +573,18 @@ def examSendMail(request, pk):
             from_email = settings.EMAIL_HOST_USER
             to_email = [info.stdemail]
 
-            # Create the EmailMessage object
-            msg = EmailMultiAlternatives(subject, strip_tags(html_content), from_email, to_email)
-            msg.attach_alternative(html_content, "text/html")
+            try:
+                # Create the EmailMessage object
+                msg = EmailMultiAlternatives(subject, strip_tags(html_content), from_email, to_email)
+                msg.attach_alternative(html_content, "text/html")
 
-            # Send the email
-            msg.send()
+                # Send the email
+                msg.send()
+            except Exception as e:
+                # Handle exceptions
+                # print(f"Error sending email to {to_email}: {str(e)}")
+                pass
+            
     exam.sendemail = 2
     exam.save()
     return Response({"ok": True}, status=status.HTTP_200_OK)
@@ -2075,11 +2081,8 @@ def requestUpdate(request, pk):
         fs = FileSystemStorage()
         media_path = fs.path('')+"/"+str(user.userid)+"/request/"
         os.makedirs(media_path, exist_ok=True)
-        for filename in os.listdir(media_path):
-            if os.path.isfile(os.path.join(media_path, filename)):
-                os.remove(os.path.join(media_path, filename))
-        fs.save(media_path+"request.jpg", file)
-        data['imgrequest_path'] = request.build_absolute_uri("/media/"+str(user.userid)+"/request/request.jpg")
+        save_file_path = fs.save(media_path+"request.jpg", file)
+        data['imgrequest_path'] = request.build_absolute_uri("/media/"+save_file_path)
     serializer = RequestSerializer(instance=request_, data=data)
     if serializer.is_valid():
         serializer.save()
