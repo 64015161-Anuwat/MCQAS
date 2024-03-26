@@ -2059,9 +2059,9 @@ def requestCreate(request):
     fs = FileSystemStorage()
     media_path = fs.path('')+"/"+str(user.userid)+"/request/"
     os.makedirs(media_path, exist_ok=True)
-    fs.save(media_path+"request.jpg", file)
+    save_file_path = fs.save(media_path+"request.jpg", file)
     data = request.data
-    data['imgrequest_path'] = request.build_absolute_uri("/media/"+str(user.userid)+"/request/request.jpg")
+    data['imgrequest_path'] = request.build_absolute_uri("/media/"+save_file_path)
     data['status_request'] = "1"
     serializer = RequestSerializer(data=request.data)
     if serializer.is_valid():
