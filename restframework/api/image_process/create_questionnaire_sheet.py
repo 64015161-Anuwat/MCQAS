@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import re
+
 from pythainlp.tokenize import sent_tokenize
 import cv2
 import numpy as np

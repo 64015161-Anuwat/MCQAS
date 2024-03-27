@@ -1,6 +1,5 @@
 from numpy import std
 
-
 def chk_validate_ans(stdid, sec_, seatid, subid, exid, ans):
     try:	
         std_check = None
