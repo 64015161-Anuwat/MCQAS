@@ -1081,7 +1081,7 @@ def examinformationTableAns(request, pk):
     if os.path.exists(fs_table_ans_path) == False:
         examinfo_file_path = examinfo.imgansstd_path.split('/')[4:]
         pre_path = fs.path('')+"/"+"/".join(examinfo_file_path[0:-1])+"/"
-        file_name = examinfo_file_path[-1]
+        file_name = unquote(examinfo_file_path[-1])
         exam = Exam.objects.get(examid=examinfo_file_path[3])
         data = process_ans(pre_path, file_name, exam.numberofexams, debug=True)
         if data[0][2] == None:
