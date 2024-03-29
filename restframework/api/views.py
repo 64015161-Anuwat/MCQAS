@@ -809,7 +809,7 @@ def examinformationUpdate(request, pk):
             serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
     else:
-        print("File")
+        # print("File")
         fs = FileSystemStorage()
         default_path = "/"+str(user.userid)+"/ans/"+str(exam.subid.subid)+"/"+str(request.data['examid'])+"/answersheet/"
         ori_path = fs.path('')+default_path+"original/"
@@ -973,7 +973,7 @@ def examinformationUploadPaper(request):
                 img_link = request.build_absolute_uri("/media"+default_path+"preprocess/"+pre_img_name)
                 examinfo['imgansstd_path'] = img_link
                 data = process_ans(pre_path, pre_img_name, exam.numberofexams, debug=False)
-                print(data)
+                # print(data)
                 error_data = ''
                 for i in range(0, len(data[0])):
                     if data[0][i] != None:
@@ -1052,7 +1052,7 @@ def examinformationUploadPaper(request):
         if examinfo_serializer.is_valid():
             examinfo_serializer.save()
         else:
-            print("examinfo_serializer.errors : ", examinfo_serializer.errors)
+            # print("examinfo_serializer.errors : ", examinfo_serializer.errors)
         res.append(examinfo_serializer.data)
     res_dict = {"result" : res}
     # toc = time.time()
@@ -1074,7 +1074,7 @@ def examinformationTableAns(request, pk):
     examinfo_file_path[-2] += "/table_ans_detect"
     table_ans_path = "/"+"/".join(examinfo_file_path)
     fs_table_ans_path = fs.path('')+table_ans_path
-    print(fs_table_ans_path)
+    # print(fs_table_ans_path)
     if os.path.exists(fs_table_ans_path) == False:
         examinfo_file_path = examinfo.imgansstd_path.split('/')[4:]
         pre_path = fs.path('')+"/"+"/".join(examinfo_file_path[0:-1])+"/"
