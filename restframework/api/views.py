@@ -1063,6 +1063,7 @@ def examinformationUploadPaper(request):
     exam.save()
     return Response(res_dict, status=status.HTTP_201_CREATED)
 
+from urllib.parse import unquote
 @api_view(['GET'])
 def examinformationTableAns(request, pk):
     try:
@@ -1070,7 +1071,7 @@ def examinformationTableAns(request, pk):
     except Examinformation.DoesNotExist:
         return Response(examinformation_notfound, status=status.HTTP_404_NOT_FOUND)
     fs = FileSystemStorage()
-    examinfo_file_path = examinfo.imgansstd_path.split('/')[4:]
+    examinfo_file_path = unquote(examinfo.imgansstd_path.split('/')[4:])
     examinfo_file_path[-1] = "table_ans_"+examinfo_file_path[-1]
     examinfo_file_path[-2] += "/table_ans_detect"
     table_ans_path = "/"+"/".join(examinfo_file_path)
