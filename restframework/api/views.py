@@ -1053,6 +1053,7 @@ def examinformationUploadPaper(request):
             examinfo_serializer.save()
         else:
             # print("examinfo_serializer.errors : ", examinfo_serializer.errors)
+            pass
         res.append(examinfo_serializer.data)
     res_dict = {"result" : res}
     # toc = time.time()
