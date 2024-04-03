@@ -944,6 +944,8 @@ def examinformationDelete(request, pk):
 
 @api_view(['POST'])
 def examinformationUploadPaper(request):
+    if request.data['clear'] == True:
+        Examinformation.objects.filter(exmaid=request.data['examid']).delete()
     # tic = time.time()
     res = []
     try:
@@ -973,7 +975,7 @@ def examinformationUploadPaper(request):
                 img_link = request.build_absolute_uri("/media"+default_path+"preprocess/"+pre_img_name)
                 examinfo['imgansstd_path'] = img_link
                 data = process_ans(pre_path, pre_img_name, exam.numberofexams, debug=False)
-                # print(data)
+                # (data)
                 error_data = ''
                 for i in range(0, len(data[0])):
                     if data[0][i] != None:
@@ -1007,13 +1009,21 @@ def examinformationUploadPaper(request):
                     err_std = "ไม่พบรหัสนักศึกษาในรายชื่อ" if index.empty else ''
                     examinfo['stdemail'] = df['อีเมล'][index[0]] if not index.empty else None
 
-                    try:
-                        queryset = Examanswers.objects.get(examid=request.data['examid'], examnoanswers=valid[5])
-                        examanswers_serializer = ExamanswersSerializer(queryset, many=False)
-                    except Examanswers.DoesNotExist:
-                        examanswers_serializer = None
+                    queryset = Examanswers.objects.filter(examid=request.data['examid'])
+                    examans_count = queryset.count()
+                    examanswers_serializer = None
+                    
+                    if examans_count == 1:
+                        examanswers_serializer = ExamanswersSerializer(queryset[0], many=False)
+                    else:
+                        try:
+                            queryset = Examanswers.objects.get(examid=request.data['examid'], examnoanswers=valid[5])
+                            examanswers_serializer = ExamanswersSerializer(queryset, many=False)
+                        except Examanswers.DoesNotExist:
+                            examanswers_serializer = None
                     
                     if examanswers_serializer != None:
+                        examinfo['setexaminfo'] = examanswers_serializer.data['examnoanswers']
                         # chk_ans return [error, ans, chans, max_score, score, right, wrong, rightperchoice, notans, analys]
                         ans = chk_ans(valid[6], exam.numberofexams, examanswers_serializer.data['choiceanswers'], examanswers_serializer.data['scoringcriteria'])
                         examinfo['score'] = ans[4]
@@ -1063,7 +1073,6 @@ def examinformationUploadPaper(request):
     exam.save()
     return Response(res_dict, status=status.HTTP_201_CREATED)
 
-from urllib.parse import unquote
 @api_view(['GET'])
 def examinformationTableAns(request, pk):
     try:
@@ -1071,8 +1080,7 @@ def examinformationTableAns(request, pk):
     except Examinformation.DoesNotExist:
         return Response(examinformation_notfound, status=status.HTTP_404_NOT_FOUND)
     fs = FileSystemStorage()
-    imgansstd_path = unquote(examinfo.imgansstd_path)
-    examinfo_file_path = imgansstd_path.split('/')[4:]
+    examinfo_file_path = examinfo.imgansstd_path.split('/')[4:]
     examinfo_file_path[-1] = "table_ans_"+examinfo_file_path[-1]
     examinfo_file_path[-2] += "/table_ans_detect"
     table_ans_path = "/"+"/".join(examinfo_file_path)
@@ -1081,7 +1089,7 @@ def examinformationTableAns(request, pk):
     if os.path.exists(fs_table_ans_path) == False:
         examinfo_file_path = examinfo.imgansstd_path.split('/')[4:]
         pre_path = fs.path('')+"/"+"/".join(examinfo_file_path[0:-1])+"/"
-        file_name = unquote(examinfo_file_path[-1])
+        file_name = examinfo_file_path[-1]
         exam = Exam.objects.get(examid=examinfo_file_path[3])
         data = process_ans(pre_path, file_name, exam.numberofexams, debug=True)
         if data[0][2] == None:
@@ -1718,6 +1726,8 @@ def queinformationDelete(request, pk):
 
 @api_view(['POST'])
 def queinformationUploadPaper(request):
+    if request.data['clear'] == True:
+        Queinformation.objects.filter(quesheetid=request.data['quesheetid']).delete()
     tic = time.time()
     res = []
     try:
