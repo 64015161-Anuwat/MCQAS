@@ -35,7 +35,7 @@ def chk_ans(ans, chno, chans, measure):
                         if str(ans[i][ii]) == 'n': 
                             notans += 1
                             notans_ = True
-                                
+
                     max_score += int(ms[2])
 
                     if ms[1] == '1':
@@ -45,15 +45,15 @@ def chk_ans(ans, chno, chans, measure):
                             score -= int(ms[3])
                     elif ms[1] == '2':
                         if chk_correct_all <= len(chans[i]):
-                            score += round(int(ms[2])/len(chans[i])*chk_correct_all, 2)
+                            score += int(ms[2])/len(chans[i])*chk_correct_all
                     elif ms[1] == '3':
                         if notans_ == False:
                             if chk_correct_all == len(chans[i]):
-                                score += round(int(ms[2])/len(chans[i])*chk_correct_all, 2)
+                                score += int(ms[2])/len(chans[i])*chk_correct_all
                             elif chk_correct_all == 0:
                                 score -= int(ms[2])
                             elif chk_correct_all < len(chans[i]):
-                                score -= round(int(ms[2])-(int(ms[2])/len(chans[i])*chk_correct_all), 2)
+                                score -= int(ms[2])-(int(ms[2])/len(chans[i])*chk_correct_all)
 
                     score = round(score, 2)
 
@@ -79,7 +79,6 @@ def chk_ans(ans, chno, chans, measure):
                         notans_ = True
 
                     max_score += int(ms[2])
-
                     if ms[1] == '1':
                         if chk_correct_all == len(chans[i]):
                             score += int(ms[2])
@@ -87,18 +86,18 @@ def chk_ans(ans, chno, chans, measure):
                             score -= int(ms[3])
                     elif ms[1] == '2':
                         if chk_correct_all <= len(chans[i]):
-                            score += round(int(ms[2])/len(chans[i])*chk_correct_all, 2)
+                            score += int(ms[2])/len(chans[i])*chk_correct_all
                     elif ms[1] == '3':
                         if notans_ == False:
                             if chk_correct_all == len(chans[i]):
-                                score += round(int(ms[2])/len(chans[i])*chk_correct_all, 2)
+                                score += int(ms[2])/len(chans[i])*chk_correct_all
                             elif chk_correct_all == 0:
                                 score -= int(ms[2])
                             elif chk_correct_all < len(chans[i]):
-                                score -= round(int(ms[2])-(int(ms[2])/len(chans[i])*chk_correct_all), 2)
+                                score -= int(ms[2])-(int(ms[2])/len(chans[i])*chk_correct_all)
+                    print(chans[i], ans[i], round(score, 2))
                             
                 score = round(score, 2)
-
                 if i != 0: analys += ","
                 if chk_correct_all == len(chans[i]):
                     right += 1
@@ -113,7 +112,7 @@ def chk_ans(ans, chno, chans, measure):
         if countchk != chno:
             err = "เกณฑ์คะแนนไม่เท่ากับจำนวนข้อ"
             return (err, None, None, None, None, None, None, None, None, None)
-
+        print(round(score, 2))
         return (err, ans, chans, max_score, round(score, 2), right, wrong, rightperchoice, notans, analys)
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
