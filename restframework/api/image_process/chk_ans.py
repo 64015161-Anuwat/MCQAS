@@ -95,9 +95,9 @@ def chk_ans(ans, chno, chans, measure):
                                 score -= int(ms[2])
                             elif chk_correct_all < len(chans[i]):
                                 score -= int(ms[2])-(int(ms[2])/len(chans[i])*chk_correct_all)
-                    print(chans[i], ans[i], round(score, 2))
                             
                 score = round(score, 2)
+                print('No.', max_score,chans[i], ans[i], int(ms[2])/len(chans[i])*chk_correct_all, score)
                 if i != 0: analys += ","
                 if chk_correct_all == len(chans[i]):
                     right += 1
