@@ -147,13 +147,13 @@ def process_ans(srcpath, filename, num_choice, debug=False):
                         else :
                             sec[col%13].append((col%13)+1)
                             sec[col%13].append(row)
-                        if debug == True:
-                            cv2.putText(table_std, str(true_pix[0]), (x_start,y_start-3), cv2.FONT_HERSHEY_SIMPLEX, 0.2, (0,0,255), 1)
-                            cv2.rectangle(table_std,(x_start,y_start),(x_end,y_end),(0,0,255),1)
-                    else : 
-                        if debug == True:
-                            cv2.putText(table_std, str(true_pix[0]), (x_start,y_start-3), cv2.FONT_HERSHEY_SIMPLEX, 0.2, (0,255,0), 1)
-                            cv2.rectangle(table_std,(x_start,y_start),(x_end,y_end),(0,255,0),1)
+                        # if debug == True:
+                        #     cv2.putText(table_std, str(true_pix[0]), (x_start,y_start-3), cv2.FONT_HERSHEY_SIMPLEX, 0.2, (0,0,255), 1)
+                        #     cv2.rectangle(table_std,(x_start,y_start),(x_end,y_end),(0,0,255),1)
+                    # else : 
+                        # if debug == True:
+                        #     cv2.putText(table_std, str(true_pix[0]), (x_start,y_start-3), cv2.FONT_HERSHEY_SIMPLEX, 0.2, (0,255,0), 1)
+                        #     cv2.rectangle(table_std,(x_start,y_start),(x_end,y_end),(0,255,0),1)
 
                 if col < 13 :
                     if count == 0 :
@@ -165,11 +165,11 @@ def process_ans(srcpath, filename, num_choice, debug=False):
                         sec[col%13].append("n")
                 count = 0
             
-            if debug == True:
-                isExist = os.path.exists(srcpath+"table_std_detect/")
-                if isExist == False:
-                    os.mkdir(srcpath+"table_std_detect/")
-                cv2.imwrite(srcpath+"table_std_detect/table_std_"+filename, table_std)
+            # if debug == True:
+            #     isExist = os.path.exists(srcpath+"table_std_detect/")
+            #     if isExist == False:
+            #         os.mkdir(srcpath+"table_std_detect/")
+            #     cv2.imwrite(srcpath+"table_std_detect/table_std_"+filename, table_std)
             # print("student ID : "+str(std_id))
             # print("Section : "+str(sec))
 
@@ -232,13 +232,13 @@ def process_ans(srcpath, filename, num_choice, debug=False):
                         else :
                             ex_id[col%13].append((col%13)+1)
                             ex_id[col%13].append(row)
-                        if debug == True:
-                            cv2.putText(table_sub, str(true_pix[0]), (x_start,y_start-3), cv2.FONT_HERSHEY_SIMPLEX, 0.2, (0,0,255), 1)
-                            cv2.rectangle(table_sub,(x_start,y_start),(x_end,y_end),(0,0,255),1)
-                    else : 
-                        if debug == True:
-                            cv2.putText(table_sub, str(true_pix[0]), (x_start,y_start-3), cv2.FONT_HERSHEY_SIMPLEX, 0.2, (0,255,0), 1)
-                            cv2.rectangle(table_sub,(x_start,y_start),(x_end,y_end),(0,255,0),1)
+                        # if debug == True:
+                        #     cv2.putText(table_sub, str(true_pix[0]), (x_start,y_start-3), cv2.FONT_HERSHEY_SIMPLEX, 0.2, (0,0,255), 1)
+                        #     cv2.rectangle(table_sub,(x_start,y_start),(x_end,y_end),(0,0,255),1)
+                    # else : 
+                    #     if debug == True:
+                    #         cv2.putText(table_sub, str(true_pix[0]), (x_start,y_start-3), cv2.FONT_HERSHEY_SIMPLEX, 0.2, (0,255,0), 1)
+                    #         cv2.rectangle(table_sub,(x_start,y_start),(x_end,y_end),(0,255,0),1)
 
                 if col >= 0 and col < 5 :
                     if count == 0 :
@@ -254,11 +254,11 @@ def process_ans(srcpath, filename, num_choice, debug=False):
                         ex_id[col%13].append("n")
                 count = 0
 
-            if debug == True:
-                isExist = os.path.exists(srcpath+"table_sub_detect/")
-                if isExist == False:
-                    os.mkdir(srcpath+"table_sub_detect/")
-                cv2.imwrite(srcpath+"table_sub_detect/table_sub_"+filename, table_sub)
+            # if debug == True:
+            #     isExist = os.path.exists(srcpath+"table_sub_detect/")
+            #     if isExist == False:
+            #         os.mkdir(srcpath+"table_sub_detect/")
+            #     cv2.imwrite(srcpath+"table_sub_detect/table_sub_"+filename, table_sub)
             # print("Seat ID : "+str(seat_id))
             # print("Subject ID : "+str(sub_id))
             # print("Exam ID : "+str(ex_id))

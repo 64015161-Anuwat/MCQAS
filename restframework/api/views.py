@@ -938,14 +938,24 @@ def examinformationDelete(request, pk):
         examinformation = Examinformation.objects.get(examinfoid=pk)
     except Examinformation.DoesNotExist:
         return Response(examinformation_notfound, status=status.HTTP_404_NOT_FOUND)
-    
+    fs = FileSystemStorage()
+    path_split = examinformation.imgansstd_path.split('/')[4:]
+    if path_split[5] == "original":
+        file_ori_path  = fs.path('')+"\\"+os.path.join(*examinformation.imgansstd_path.split('/')[4:])
+        file_pre_path  = file_ori_path.replace('\\original\\','\\preprocess\\pre_')
+        file_pre_table_path  = file_ori_path.replace('\\original\\','\\preprocess\\table_ans_detect\\table_ans_pre_')
+    else:
+        file_pre_path  = fs.path('')+"\\"+os.path.join(*examinformation.imgansstd_path.split('/')[4:])
+        file_ori_path  = file_pre_path.replace('\\preprocess\\pre_','\\original\\')
+        file_pre_table_path  = file_pre_path.replace('\\preprocess\\pre_','\\preprocess\\table_ans_detect\\table_ans_pre_')
+    if os.path.exists(file_ori_path): os.remove(file_ori_path)
+    if os.path.exists(file_pre_path): os.remove(file_pre_path)
+    if os.path.exists(file_pre_table_path): os.remove(file_pre_table_path)
     examinformation.delete()
     return Response({"msg" : "ลบข้อมูลข้อสอบสำเร็จ"}, status=status.HTTP_200_OK)
 
 @api_view(['POST'])
 def examinformationUploadPaper(request):
-    if request.data['clear'] == True:
-        Examinformation.objects.filter(exmaid=request.data['examid']).delete()
     # tic = time.time()
     res = []
     try:
@@ -959,6 +969,18 @@ def examinformationUploadPaper(request):
     pre_path = fs.path('')+default_path+"preprocess/"
     pre_path_ = "/"+str(user.userid)+"/ans/"+str(exam.subid.subid)+"/"+str(request.data['examid'])+"/answersheet/"+"preprocess/"
     os.makedirs(ori_path, exist_ok=True)
+
+    if request.data['clear'] == True or request.data['clear'] == "true":
+        Examinformation.objects.filter(examid=request.data['examid']).delete()
+        ori_path = fs.path('')+default_path+"original/"
+        pre_path = fs.path('')+default_path+"preprocess/"
+        for file_image_path in [ori_path, pre_path+"table_ans_detect/", pre_path]:
+            if os.path.exists(file_image_path):
+                file_list = os.listdir(file_image_path)
+                for file_name in file_list:
+                    file_path = os.path.join(file_image_path, file_name)
+                    if os.path.isfile(file_path):
+                        os.unlink(file_path)
 
     for file in request.FILES.getlist('file'):
         examinfo = {
@@ -1726,8 +1748,8 @@ def queinformationDelete(request, pk):
 
 @api_view(['POST'])
 def queinformationUploadPaper(request):
-    if request.data['clear'] == True:
-        Queinformation.objects.filter(quesheetid=request.data['quesheetid']).delete()
+    # if request.data['clear'] == True:
+    #     Queinformation.objects.filter(quesheetid=request.data['quesheetid']).delete()
     tic = time.time()
     res = []
     try:
