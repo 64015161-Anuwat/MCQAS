@@ -83,7 +83,7 @@ CREATE TABLE "ExamInformation" (
   "ExamSeatNumber" varchar(20),
   "SetExamInfo" int,
   "Section" varchar(20),
-  "Score" int,
+  "Score" float,
   "Correct" int,
   "Wrong" int,
   "Unresponsive" int,
