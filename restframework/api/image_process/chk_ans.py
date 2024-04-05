@@ -97,7 +97,7 @@ def chk_ans(ans, chno, chans, measure):
                                 score -= int(ms[2])-(int(ms[2])/len(chans[i])*chk_correct_all)
                             
                 score = round(score, 2)
-                print('No.', max_score, chans[i], ans[i], int(ms[2])/len(chans[i])*chk_correct_all, score)
+                # print('No.', max_score, chans[i], ans[i], int(ms[2])/len(chans[i])*chk_correct_all, score)
                 if i != 0: analys += ","
                 if chk_correct_all == len(chans[i]):
                     right += 1
@@ -112,7 +112,7 @@ def chk_ans(ans, chno, chans, measure):
         if countchk != chno:
             err = "เกณฑ์คะแนนไม่เท่ากับจำนวนข้อ"
             return (err, None, None, None, None, None, None, None, None, None)
-        print(round(score, 2))
+        # print(round(score, 2))
         return (err, ans, chans, max_score, round(score, 2), right, wrong, rightperchoice, notans, analys)
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
