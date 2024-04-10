@@ -887,13 +887,21 @@ def examinformationUpdate(request, pk):
                     err_std = "ไม่พบรหัสนักศึกษาในรายชื่อ" if index.empty else ''
                     examinfo['stdemail'] = df['อีเมล'][index[0]] if not index.empty else None
 
-                    try:
-                        queryset = Examanswers.objects.get(examid=request.data['examid'], examnoanswers=valid[5])
-                        examanswers_serializer = ExamanswersSerializer(queryset, many=False)
-                    except Examanswers.DoesNotExist:
-                        examanswers_serializer = None
+                    queryset = Examanswers.objects.filter(examid=request.data['examid'])
+                    examans_count = queryset.count()
+                    examanswers_serializer = None
+                    
+                    if examans_count == 1:
+                        examanswers_serializer = ExamanswersSerializer(queryset[0], many=False)
+                    else:
+                        try:
+                            queryset = Examanswers.objects.get(examid=request.data['examid'], examnoanswers=valid[5])
+                            examanswers_serializer = ExamanswersSerializer(queryset, many=False)
+                        except Examanswers.DoesNotExist:
+                            examanswers_serializer = None
                     
                     if examanswers_serializer != None:
+                        examinfo['setexaminfo'] = examanswers_serializer.data['examnoanswers']
                         # chk_ans return [error, ans, chans, max_score, score, right, wrong, rightperchoice, notans, analys]
                         ans = chk_ans(valid[6], exam.numberofexams, examanswers_serializer.data['choiceanswers'], examanswers_serializer.data['scoringcriteria'])
                         examinfo['score'] = ans[4]
@@ -1198,7 +1206,7 @@ def examinformationResult(request, pk):
             data_proc[4].append(round(np.var(data_row[i]), 2))
             data_proc[5].append(round(np.std(data_row[i]), 2))
             data_proc[6].append(round(np.std(data_row[i])/np.average(data_row[i])*100, 2))
-            data_proc[7].append(np.sum(data_row[i]))
+            data_proc[7].append(round(np.sum(data_row[i]), 2))
 
         # Write the updated data back to the CSV file
         with open(csv_result_path, 'w', newline='', encoding='utf-8-sig') as csvfile:
