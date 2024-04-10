@@ -102,8 +102,10 @@ def chk_ans(ans, chno, chans, measure):
                 if chk_correct_all == len(chans[i]):
                     right += 1
                     analys += "1"
-                else:
+                elif chk_correct_all != len(chans[i]) and notans_ == False:
                     wrong += 1
+                    analys += "0"
+                else:
                     analys += "0"
                 chk_correct_all = 0
                 notans_ = False
